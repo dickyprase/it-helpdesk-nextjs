@@ -13,6 +13,8 @@ import {
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import path from 'path';
+import { sendTicketNotification } from './whatsapp';
+import { TICKET_EVENTS } from '@/lib/constants';
 import { writeFile, mkdir } from 'fs/promises';
 
 export type TicketActionResult = {
@@ -128,6 +130,9 @@ export async function createTicketAction(
   const files = formData.getAll('attachments') as File[];
   await saveAttachments(files, ticket.id, session.id);
 
+  // Notify
+  sendTicketNotification(TICKET_EVENTS.TICKET_CREATED, ticket.id).catch(() => {});
+
   revalidatePath('/dashboard/tickets');
   redirect(`/dashboard/tickets/${ticket.id}`);
 }
@@ -187,6 +192,8 @@ export async function claimTicketAction(
       error instanceof Error ? error.message : 'Gagal mengklaim tiket';
     return { success: false, error: message };
   }
+
+  sendTicketNotification(TICKET_EVENTS.TICKET_IN_PROGRESS, ticketId).catch(() => {});
 
   revalidatePath('/dashboard/tickets');
   revalidatePath(`/dashboard/tickets/${ticketId}`);
@@ -259,6 +266,18 @@ export async function updateTicketStatusAction(
     }
   }
 
+  // Notify based on new status
+  const eventMap: Record<string, string> = {
+    IN_PROGRESS: TICKET_EVENTS.TICKET_IN_PROGRESS,
+    CLOSED: TICKET_EVENTS.TICKET_CLOSED,
+    RESOLVED: TICKET_EVENTS.TICKET_RESOLVED,
+    PENDING: TICKET_EVENTS.TICKET_PENDING,
+  };
+  const event = eventMap[parsed.data.status];
+  if (event) {
+    sendTicketNotification(event, parsed.data.ticket_id).catch(() => {});
+  }
+
   revalidatePath('/dashboard/tickets');
   revalidatePath(`/dashboard/tickets/${parsed.data.ticket_id}`);
   revalidatePath('/dashboard/leaderboard');
@@ -314,6 +333,8 @@ export async function pendingTicketAction(
       pending_reason: parsed.data.pending_reason,
     },
   });
+
+  sendTicketNotification(TICKET_EVENTS.TICKET_PENDING, parsed.data.ticket_id).catch(() => {});
 
   revalidatePath('/dashboard/tickets');
   revalidatePath(`/dashboard/tickets/${parsed.data.ticket_id}`);
@@ -374,6 +395,8 @@ export async function resolveTicketAction(
   // Save staff attachments
   const files = formData.getAll('attachments') as File[];
   await saveAttachments(files, parsed.data.ticket_id, session.id);
+
+  sendTicketNotification(TICKET_EVENTS.TICKET_RESOLVED, parsed.data.ticket_id).catch(() => {});
 
   revalidatePath('/dashboard/tickets');
   revalidatePath(`/dashboard/tickets/${parsed.data.ticket_id}`);
@@ -463,6 +486,8 @@ export async function assignTicketAction(
       status: ticket.status === 'OPEN' ? 'IN_PROGRESS' : ticket.status,
     },
   });
+
+  sendTicketNotification(TICKET_EVENTS.TICKET_ASSIGNED, parsed.data.ticket_id).catch(() => {});
 
   revalidatePath('/dashboard/tickets');
   revalidatePath(`/dashboard/tickets/${parsed.data.ticket_id}`);

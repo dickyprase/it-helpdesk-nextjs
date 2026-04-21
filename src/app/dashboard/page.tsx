@@ -136,7 +136,10 @@ export default async function DashboardPage() {
 
           {/* Manager-only: WA Gateway */}
           {user.role === 'MANAGER' && (
-            <div className="group relative overflow-hidden rounded-2xl p-6 transition-all duration-300 hover:scale-[1.02] theme-card">
+            <Link
+              href="/dashboard/admin/whatsapp"
+              className="group relative overflow-hidden rounded-2xl p-6 transition-all duration-300 hover:scale-[1.02] block theme-card"
+            >
               <div className="absolute inset-0 bg-gradient-to-br from-purple-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
               <div className="relative z-10">
                 <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center shadow-lg shadow-purple-500/20 mb-4">
@@ -149,7 +152,7 @@ export default async function DashboardPage() {
                   Konfigurasi notifikasi WhatsApp
                 </p>
               </div>
-            </div>
+            </Link>
           )}
         </div>
 
