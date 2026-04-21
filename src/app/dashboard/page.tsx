@@ -103,7 +103,7 @@ export default async function DashboardPage() {
           </Link>
 
           {/* Leaderboard */}
-          <div className="group relative overflow-hidden rounded-2xl p-6 transition-all duration-300 hover:scale-[1.02] theme-card">
+          <Link href="/dashboard/leaderboard" className="group relative overflow-hidden rounded-2xl p-6 transition-all duration-300 hover:scale-[1.02] block theme-card">
             <div className="absolute inset-0 bg-gradient-to-br from-amber-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
             <div className="relative z-10">
               <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center shadow-lg shadow-amber-500/20 mb-4">
@@ -116,10 +116,10 @@ export default async function DashboardPage() {
                 Lihat peringkat performa staff IT
               </p>
             </div>
-          </div>
+          </Link>
 
           {/* Chat */}
-          <div className="group relative overflow-hidden rounded-2xl p-6 transition-all duration-300 hover:scale-[1.02] theme-card">
+          <Link href="/dashboard/tickets" className="group relative overflow-hidden rounded-2xl p-6 transition-all duration-300 hover:scale-[1.02] block theme-card">
             <div className="absolute inset-0 bg-gradient-to-br from-green-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
             <div className="relative z-10">
               <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center shadow-lg shadow-green-500/20 mb-4">
@@ -132,7 +132,7 @@ export default async function DashboardPage() {
                 Komunikasi real-time terkait tiket
               </p>
             </div>
-          </div>
+          </Link>
 
           {/* Manager-only: WA Gateway */}
           {user.role === 'MANAGER' && (

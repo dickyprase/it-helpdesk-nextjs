@@ -97,3 +97,14 @@ export type AssignTicketInput = z.infer<typeof assignTicketSchema>;
 export type ResolveTicketInput = z.infer<typeof resolveTicketSchema>;
 export type PendingTicketInput = z.infer<typeof pendingTicketSchema>;
 export type SetDifficultyInput = z.infer<typeof setDifficultySchema>;
+
+// Chat Validations
+export const sendMessageSchema = z.object({
+  ticket_id: z.string().min(1, 'ID tiket wajib diisi'),
+  message: z
+    .string()
+    .min(1, 'Pesan tidak boleh kosong')
+    .max(2000, 'Pesan maksimal 2000 karakter'),
+});
+
+export type SendMessageInput = z.infer<typeof sendMessageSchema>;

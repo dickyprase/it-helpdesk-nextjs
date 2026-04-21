@@ -129,7 +129,16 @@ export default function CreateTicketForm({ categories }: CreateTicketFormProps) 
             multiple
             accept="image/*,video/*"
             onChange={(e) => {
-              setSelectedFiles(e.target.files ? Array.from(e.target.files) : []);
+              const files = e.target.files ? Array.from(e.target.files) : [];
+              const maxSize = 100 * 1024 * 1024; // 100MB
+              const oversized = files.filter((f) => f.size > maxSize);
+              if (oversized.length > 0) {
+                alert(`File berikut melebihi batas 100MB: ${oversized.map((f) => f.name).join(', ')}`);
+                e.target.value = '';
+                setSelectedFiles([]);
+                return;
+              }
+              setSelectedFiles(files);
             }}
             className="w-full px-4 py-3 rounded-xl theme-input transition-all duration-200 text-sm file:mr-4 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-blue-500/20 file:text-blue-400 hover:file:bg-blue-500/30"
           />

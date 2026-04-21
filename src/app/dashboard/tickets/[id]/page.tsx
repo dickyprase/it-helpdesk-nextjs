@@ -1,5 +1,6 @@
 import { getSession } from '@/lib/auth';
 import { getTicketById, getStaffList } from '@/lib/actions/tickets';
+import { getChatMessages } from '@/lib/actions/chat';
 import { redirect, notFound } from 'next/navigation';
 import Link from 'next/link';
 import { logoutAction } from '@/lib/actions/auth';
@@ -20,6 +21,7 @@ import {
   Clock,
 } from 'lucide-react';
 import TicketActions from './ticket-actions';
+import FloatingChat from '@/components/chat/floating-chat';
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string; border: string }> = {
   OPEN: { label: 'Open', color: 'text-green-400', bg: 'bg-green-500/10', border: 'border-green-500/30' },
@@ -72,6 +74,31 @@ export default async function TicketDetailPage({ params }: { params: Promise<{ i
   }
 
   const staffList = session.role === 'MANAGER' ? await getStaffList() : [];
+
+  // Fetch chat messages for floating chat (only if ticket is not OPEN)
+  const chatMessages = ticket.status !== 'OPEN'
+    ? await getChatMessages(ticket.id)
+    : [];
+
+  const initialChatMessages = chatMessages.map((m) => ({
+    id: m.id,
+    message: m.message,
+    ticket_id: m.ticket_id,
+    sender_id: m.sender_id,
+    sender_name: m.sender.name,
+    sender_role: m.sender.role,
+    created_at: m.created_at.toISOString(),
+    attachment_url: m.attachment_url,
+    attachment_type: m.attachment_type,
+    is_voice_note: m.is_voice_note,
+  }));
+
+  // Check if current user has access to chat
+  const canChat =
+    ticket.status !== 'OPEN' &&
+    (ticket.user_id === session.id ||
+      ticket.staff_id === session.id ||
+      session.role === 'MANAGER');
 
   const statusCfg = STATUS_CONFIG[ticket.status] ?? STATUS_CONFIG.OPEN;
   const difficultyCfg = DIFFICULTY_LABELS[ticket.difficulty_level] ?? DIFFICULTY_LABELS[1];
@@ -340,6 +367,16 @@ export default async function TicketDetailPage({ params }: { params: Promise<{ i
           staffList={staffList}
         />
       </main>
+
+      {/* Floating Chat Bubble */}
+      {canChat && (
+        <FloatingChat
+          ticketId={ticket.id}
+          sessionUser={{ id: session.id, name: session.name, role: session.role }}
+          initialMessages={initialChatMessages}
+          isClosed={ticket.status === 'CLOSED'}
+        />
+      )}
     </div>
   );
 }

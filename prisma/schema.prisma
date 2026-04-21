@@ -96,8 +96,11 @@ model TicketAttachment {
 }
 
 model Chat {
-  id         String   @id @default(uuid())
-  message    String
+  id             String   @id @default(uuid())
+  message        String
+  attachment_url String?
+  attachment_type String?  // image/png, video/mp4, audio/webm, etc.
+  is_voice_note  Boolean  @default(false)
   
   ticket_id  String
   ticket     Ticket   @relation(fields: [ticket_id], references: [id])

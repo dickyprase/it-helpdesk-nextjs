@@ -236,8 +236,32 @@ export async function updateTicketStatusAction(
     data: { status: parsed.data.status as any },
   });
 
+  // Auto-create LeaderboardLog when Manager closes a ticket
+  if (parsed.data.status === 'CLOSED' && ticket.staff_id) {
+    const now = new Date();
+    const points = 10 * ticket.difficulty_level; // Score = 10 * Difficulty (1/2/3)
+
+    // Prevent duplicate: check if log already exists for this ticket
+    const existing = await prisma.leaderboardLog.findFirst({
+      where: { ticket_id: ticket.id },
+    });
+
+    if (!existing) {
+      await prisma.leaderboardLog.create({
+        data: {
+          staff_id: ticket.staff_id,
+          ticket_id: ticket.id,
+          points,
+          period_month: now.getMonth() + 1,
+          period_year: now.getFullYear(),
+        },
+      });
+    }
+  }
+
   revalidatePath('/dashboard/tickets');
   revalidatePath(`/dashboard/tickets/${parsed.data.ticket_id}`);
+  revalidatePath('/dashboard/leaderboard');
   return { success: true };
 }
 
