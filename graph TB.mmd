@@ -1,0 +1,51 @@
+graph LR
+    %% Pengaturan Aktor (Header)
+    subgraph User [USER / PELAPOR]
+        A1[Buat Tiket Baru]
+        A2[Terima Notif WA: In Progress]
+        A3[Terima Notif WA: Resolved]
+    end
+
+    subgraph Backend [SISTEM / BACKEND]
+        B1[Kirim WA ke Staff IT]
+        B2{Validasi Race Condition}
+        B3[Update Status: In Progress]
+        B4[Update Status: Resolved]
+        B5[Update Leaderboard & Close]
+    end
+
+    subgraph Staff [STAFF IT]
+        C1[Lihat Daftar Tiket Open]
+        C2[Klik Accept Tiket]
+        C3{Ada Kendala?}
+        C4[Selesaikan Pekerjaan]
+        C5[Terima Notif Leaderboard]
+    end
+
+    subgraph Boss [MANAGER / OWNER]
+        D1[Terima Notif WA: Resolved]
+        D2[Cek Rekap Dashboard]
+    end
+
+    %% Jalur Alur yang Sejajar
+    A1 --> B1
+    B1 --> C1
+    C1 --> C2
+    C2 --> B2
+    B2 -- Sukses --> B3
+    B3 --> A2
+    A2 --> C3
+    C3 -- Tidak --> C4
+    C3 -- Ya --> B3
+    C4 --> B4
+    B4 --> A3
+    B4 --> D1
+    D1 --> D2
+    A3 --> B5
+    B5 --> C5
+
+    %% Styling
+    style User fill:#f9f9f9,stroke:#333,stroke-dasharray: 5 5
+    style Backend fill:#e1f5fe,stroke:#01579b
+    style Staff fill:#f3e5f5,stroke:#7b1fa2
+    style Boss fill:#fff3e0,stroke:#e65100

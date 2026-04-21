@@ -1,26 +1,196 @@
 @import "tailwindcss";
 
+/* ===== Theme Variables ===== */
+
+/* Default fallback (dark) */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --theme-bg-gradient-from: #0f172a;
+  --theme-bg-gradient-via: #172554;
+  --theme-bg-gradient-to: #1e1b4b;
+  --theme-nav-bg: rgba(15, 23, 42, 0.8);
+  --theme-nav-border: rgba(255, 255, 255, 0.06);
+  --theme-card-bg: rgba(255, 255, 255, 0.04);
+  --theme-card-border: rgba(255, 255, 255, 0.08);
+  --theme-card-bg-hover: rgba(255, 255, 255, 0.07);
+  --theme-form-bg: rgba(255, 255, 255, 0.05);
+  --theme-form-border: rgba(255, 255, 255, 0.1);
+  --theme-input-bg: rgba(255, 255, 255, 0.05);
+  --theme-input-border: rgba(255, 255, 255, 0.1);
+  --theme-text-primary: #ffffff;
+  --theme-text-secondary: rgba(191, 219, 254, 0.6);
+  --theme-text-muted: rgba(191, 219, 254, 0.4);
+  --theme-text-placeholder: rgba(255, 255, 255, 0.3);
+  --theme-text-icon: rgba(147, 197, 253, 0.5);
+  --theme-option-bg: #0f172a;
+  --theme-orb-1: rgba(59, 130, 246, 0.2);
+  --theme-orb-2: rgba(99, 102, 241, 0.15);
+  --theme-orb-3: rgba(168, 85, 247, 0.1);
 }
 
+/* Dark theme (explicit class) */
+.dark {
+  --theme-bg-gradient-from: #0f172a;
+  --theme-bg-gradient-via: #172554;
+  --theme-bg-gradient-to: #1e1b4b;
+
+  --theme-nav-bg: rgba(15, 23, 42, 0.8);
+  --theme-nav-border: rgba(255, 255, 255, 0.06);
+
+  --theme-card-bg: rgba(255, 255, 255, 0.04);
+  --theme-card-border: rgba(255, 255, 255, 0.08);
+  --theme-card-bg-hover: rgba(255, 255, 255, 0.07);
+
+  --theme-form-bg: rgba(255, 255, 255, 0.05);
+  --theme-form-border: rgba(255, 255, 255, 0.1);
+
+  --theme-input-bg: rgba(255, 255, 255, 0.05);
+  --theme-input-border: rgba(255, 255, 255, 0.1);
+
+  --theme-text-primary: #ffffff;
+  --theme-text-secondary: rgba(191, 219, 254, 0.6);
+  --theme-text-muted: rgba(191, 219, 254, 0.4);
+  --theme-text-placeholder: rgba(255, 255, 255, 0.3);
+  --theme-text-icon: rgba(147, 197, 253, 0.5);
+
+  --theme-option-bg: #0f172a;
+
+  --theme-orb-1: rgba(59, 130, 246, 0.2);
+  --theme-orb-2: rgba(99, 102, 241, 0.15);
+  --theme-orb-3: rgba(168, 85, 247, 0.1);
+}
+
+/* Light theme (html.light for higher specificity over :root) */
+html.light {
+  --theme-bg-gradient-from: #f0f4ff;
+  --theme-bg-gradient-via: #e0e7ff;
+  --theme-bg-gradient-to: #ede9fe;
+
+  --theme-nav-bg: rgba(255, 255, 255, 0.85);
+  --theme-nav-border: rgba(0, 0, 0, 0.08);
+
+  --theme-card-bg: rgba(255, 255, 255, 0.7);
+  --theme-card-border: rgba(0, 0, 0, 0.08);
+  --theme-card-bg-hover: rgba(255, 255, 255, 0.9);
+
+  --theme-form-bg: rgba(255, 255, 255, 0.8);
+  --theme-form-border: rgba(0, 0, 0, 0.1);
+
+  --theme-input-bg: rgba(255, 255, 255, 0.6);
+  --theme-input-border: rgba(0, 0, 0, 0.12);
+
+  --theme-text-primary: #1e293b;
+  --theme-text-secondary: #475569;
+  --theme-text-muted: #94a3b8;
+  --theme-text-placeholder: #94a3b8;
+  --theme-text-icon: #64748b;
+
+  --theme-option-bg: #ffffff;
+
+  --theme-orb-1: rgba(59, 130, 246, 0.12);
+  --theme-orb-2: rgba(99, 102, 241, 0.1);
+  --theme-orb-3: rgba(168, 85, 247, 0.08);
+}
+
+/* ===== Tailwind v4 Theme Tokens ===== */
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
+  --color-background: var(--theme-bg-gradient-from);
+  --color-foreground: var(--theme-text-primary);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+
+  --color-theme-bg-from: var(--theme-bg-gradient-from);
+  --color-theme-bg-via: var(--theme-bg-gradient-via);
+  --color-theme-bg-to: var(--theme-bg-gradient-to);
+  --color-theme-text-primary: var(--theme-text-primary);
+  --color-theme-text-secondary: var(--theme-text-secondary);
+  --color-theme-text-muted: var(--theme-text-muted);
+  --color-theme-text-placeholder: var(--theme-text-placeholder);
+  --color-theme-text-icon: var(--theme-text-icon);
+  --color-theme-card-bg: var(--theme-card-bg);
+  --color-theme-card-border: var(--theme-card-border);
+  --color-theme-input-bg: var(--theme-input-bg);
+  --color-theme-input-border: var(--theme-input-border);
+  --color-theme-option-bg: var(--theme-option-bg);
+  --color-theme-nav-bg: var(--theme-nav-bg);
+  --color-theme-nav-border: var(--theme-nav-border);
+  --color-theme-orb-1: var(--theme-orb-1);
+  --color-theme-orb-2: var(--theme-orb-2);
+  --color-theme-orb-3: var(--theme-orb-3);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
+/* ===== Base Styles ===== */
 body {
-  background: var(--background);
-  color: var(--foreground);
+  background: var(--theme-bg-gradient-from);
+  color: var(--theme-text-primary);
   font-family: Arial, Helvetica, sans-serif;
+}
+
+/* ===== Glassmorphism Utility Classes ===== */
+.glass-card {
+  background: var(--theme-form-bg);
+  backdrop-filter: blur(20px);
+  border: 1px solid var(--theme-form-border);
+  @apply rounded-xl shadow-lg;
+}
+
+/* ===== Theme-aware component classes ===== */
+.theme-page {
+  min-height: 100vh;
+  background: linear-gradient(
+    to bottom right,
+    var(--theme-bg-gradient-from),
+    var(--theme-bg-gradient-via),
+    var(--theme-bg-gradient-to)
+  );
+}
+
+.theme-nav {
+  background: var(--theme-nav-bg);
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--theme-nav-border);
+}
+
+.theme-card {
+  background: var(--theme-card-bg);
+  backdrop-filter: blur(10px);
+  border: 1px solid var(--theme-card-border);
+}
+
+.theme-card:hover {
+  background: var(--theme-card-bg-hover);
+}
+
+.theme-form-card {
+  background: var(--theme-form-bg);
+  backdrop-filter: blur(20px);
+  border: 1px solid var(--theme-form-border);
+}
+
+.theme-input {
+  background: var(--theme-input-bg);
+  border: 1px solid var(--theme-input-border);
+  color: var(--theme-text-primary);
+}
+
+.theme-input::placeholder {
+  color: var(--theme-text-placeholder);
+}
+
+.theme-input:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.4);
+  border-color: rgba(59, 130, 246, 0.5);
+}
+
+/* Light theme shadow adjustments */
+html.light .theme-card {
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+html.light .theme-form-card {
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.04), 0 2px 4px rgba(0, 0, 0, 0.03);
+}
+
+html.light .theme-nav {
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }

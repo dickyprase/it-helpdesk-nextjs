@@ -1,0 +1,141 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  USER
+  STAFF
+  MANAGER
+}
+
+enum TicketStatus {
+  OPEN
+  IN_PROGRESS
+  PENDING
+  RESOLVED
+  CLOSED
+}
+
+model User {
+  id            String   @id @default(uuid())
+  name          String
+  email         String   @unique
+  password_hash String
+  role          Role     @default(USER)
+  created_at    DateTime @default(now())
+  updated_at    DateTime @updatedAt
+
+  tickets       Ticket[] @relation("UserTickets")
+  handled_tickets Ticket[] @relation("StaffTickets")
+  chats         Chat[]
+  leaderboard_logs LeaderboardLog[]
+  sessions      Session[]
+}
+
+model Session {
+  id         String   @id
+  user_id    String
+  user       User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  expires_at DateTime
+
+  @@index([user_id])
+}
+
+model Category {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  description String?
+  tickets     Ticket[]
+}
+
+model Ticket {
+  id               String       @id @default(uuid())
+  code             String       @unique
+  title            String
+  description      String
+  status           TicketStatus @default(OPEN)
+  difficulty_level Int          @default(1)
+  resolution_note  String?      @db.Text
+  pending_reason   String?      @db.Text
+  
+  category_id      String
+  category         Category     @relation(fields: [category_id], references: [id])
+  
+  user_id          String
+  user             User         @relation("UserTickets", fields: [user_id], references: [id])
+  
+  staff_id         String?
+  staff            User?        @relation("StaffTickets", fields: [staff_id], references: [id])
+  
+  created_at       DateTime     @default(now())
+  updated_at       DateTime     @updatedAt
+
+  chats            Chat[]
+  leaderboard_logs LeaderboardLog[]
+  attachments      TicketAttachment[]
+}
+
+model TicketAttachment {
+  id          String   @id @default(uuid())
+  filename    String
+  filepath    String
+  filetype    String
+  filesize    Int
+  
+  ticket_id   String
+  ticket      Ticket   @relation(fields: [ticket_id], references: [id], onDelete: Cascade)
+  
+  uploaded_by String
+  created_at  DateTime @default(now())
+
+  @@index([ticket_id])
+}
+
+model Chat {
+  id         String   @id @default(uuid())
+  message    String
+  
+  ticket_id  String
+  ticket     Ticket   @relation(fields: [ticket_id], references: [id])
+  
+  sender_id  String
+  sender     User     @relation(fields: [sender_id], references: [id])
+  
+  created_at DateTime @default(now())
+}
+
+model LeaderboardLog {
+  id           String   @id @default(uuid())
+  points       Int
+  period_month Int
+  period_year  Int
+  
+  staff_id     String
+  staff        User     @relation(fields: [staff_id], references: [id])
+  
+  ticket_id    String
+  ticket       Ticket   @relation(fields: [ticket_id], references: [id])
+  
+  created_at   DateTime @default(now())
+}
+
+model WA_Setting {
+  id                String   @id @default(uuid())
+  is_enabled        Boolean  @default(false)
+  session_data      String?  @db.Text
+  connection_status String   @default("disconnected")
+  updated_at        DateTime @updatedAt
+}
+
+model Notification_Template {
+  id            String   @id @default(uuid())
+  event_type    String   @unique
+  template_body String   @db.Text
+  variables     String   // Commma-separated list of expected variables, e.g., "[id-ticket],[nama-user]"
+  created_at    DateTime @default(now())
+  updated_at    DateTime @updatedAt
+}
