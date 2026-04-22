@@ -6,8 +6,8 @@ import {
   LayoutDashboard,
   Ticket,
   Trophy,
-  MessageSquare,
   Settings,
+  UserCog,
 } from 'lucide-react';
 import { logoutAction } from '@/lib/actions/auth';
 import ThemeToggle from '@/components/ui/theme-toggle';
@@ -120,18 +120,21 @@ export default async function DashboardPage() {
             </Link>
           )}
 
-          {/* Chat */}
-          <Link href="/dashboard/tickets" className="group relative overflow-hidden rounded-2xl p-6 transition-all duration-300 hover:scale-[1.02] block theme-card">
-            <div className="absolute inset-0 bg-gradient-to-br from-green-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+          {/* Profil */}
+          <Link
+            href="/dashboard/profile"
+            className="group relative overflow-hidden rounded-2xl p-6 transition-all duration-300 hover:scale-[1.02] block theme-card"
+          >
+            <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
             <div className="relative z-10">
-              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center shadow-lg shadow-green-500/20 mb-4">
-                <MessageSquare className="w-6 h-6 text-white" />
+              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center shadow-lg shadow-cyan-500/20 mb-4">
+                <UserCog className="w-6 h-6 text-white" />
               </div>
               <h3 className="text-lg font-semibold text-theme-text-primary mb-1">
-                Chat
+                Profil Saya
               </h3>
               <p className="text-sm text-theme-text-muted">
-                Komunikasi real-time terkait tiket
+                Kelola profil dan ganti password
               </p>
             </div>
           </Link>
@@ -156,31 +159,6 @@ export default async function DashboardPage() {
               </div>
             </Link>
           )}
-        </div>
-
-        {/* Status Indicator */}
-        <div className="mt-10 rounded-2xl p-6 theme-card">
-          <h2 className="text-sm font-semibold text-theme-text-muted uppercase tracking-wider mb-4">
-            Progress Pembangunan
-          </h2>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-center">
-            <div className="p-3 rounded-xl bg-green-500/10 border border-green-500/20">
-              <p className="text-xs text-green-400/60 mb-1">Tahap 1.1</p>
-              <p className="text-sm font-medium text-green-500">Fondasi</p>
-            </div>
-            <div className="p-3 rounded-xl bg-green-500/10 border border-green-500/20">
-              <p className="text-xs text-green-400/60 mb-1">Tahap 1.2</p>
-              <p className="text-sm font-medium text-green-500">Database</p>
-            </div>
-            <div className="p-3 rounded-xl bg-green-500/10 border border-green-500/20">
-              <p className="text-xs text-green-400/60 mb-1">Tahap 1.3</p>
-              <p className="text-sm font-medium text-green-500">Auth</p>
-            </div>
-            <div className="p-3 rounded-xl bg-green-500/10 border border-green-500/20">
-              <p className="text-xs text-green-400/60 mb-1">Tahap 2</p>
-              <p className="text-sm font-medium text-green-500">Ticketing</p>
-            </div>
-          </div>
         </div>
       </main>
     </div>

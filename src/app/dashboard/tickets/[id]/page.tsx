@@ -24,8 +24,8 @@ import TicketActions from './ticket-actions';
 import FloatingChat from '@/components/chat/floating-chat';
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string; border: string }> = {
-  OPEN: { label: 'Open', color: 'text-green-400', bg: 'bg-green-500/10', border: 'border-green-500/30' },
-  IN_PROGRESS: { label: 'Dalam Proses', color: 'text-blue-400', bg: 'bg-blue-500/10', border: 'border-blue-500/30' },
+  OPEN: { label: 'Terbuka', color: 'text-green-400', bg: 'bg-green-500/10', border: 'border-green-500/30' },
+  IN_PROGRESS: { label: 'Diproses', color: 'text-blue-400', bg: 'bg-blue-500/10', border: 'border-blue-500/30' },
   PENDING: { label: 'Tertunda', color: 'text-amber-400', bg: 'bg-amber-500/10', border: 'border-amber-500/30' },
   RESOLVED: { label: 'Selesai', color: 'text-purple-400', bg: 'bg-purple-500/10', border: 'border-purple-500/30' },
   CLOSED: { label: 'Ditutup', color: 'text-gray-400', bg: 'bg-gray-500/10', border: 'border-gray-500/30' },

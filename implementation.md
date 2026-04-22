@@ -187,16 +187,29 @@ Notification_Templates: id, event_type, template_body, variables, created_at, up
 **Durasi**: 1-2 hari
 
 #### 7.1 Refinement UI/UX
-- Terapkan tema glassmorphism konsisten
-- Optimasi desain responsif
-- Tambah loading states dan error handling
-- Implementasi fitur aksesibilitas
+- ✅ Buat loading.tsx skeleton loader untuk semua dashboard routes
+- ✅ Buat error.tsx error boundary dengan tombol retry
+- ✅ Buat not-found.tsx custom 404 page
+- ✅ Konsistensi label status tiket (semua bahasa Indonesia)
+- ✅ Hapus duplikasi CSS :root (identik dengan .dark)
+- ✅ Hapus font-family override yang menimpa Geist font
+- ✅ Tambah focus-visible styles untuk keyboard navigation
+- ✅ Hapus section "Progress Pembangunan" (developer-facing)
+- ✅ Hapus duplikat card "Chat" di dashboard
+- ✅ Redirect user yang sudah login dari landing page ke dashboard
+- ✅ Ganti alert() dengan inline error pada upload file (chat, create ticket, resolve ticket)
 
-#### 7.2 Testing & Quality Assurance
-- Buat skenario test komprehensif
-- Test penanganan race condition
-- Validasi integrasi WhatsApp
-- Performance testing under load
+#### 7.2 Aksesibilitas
+- ✅ Tambah aria-label pada semua icon-only buttons (theme toggle, logout, chat bubble, close)
+- ✅ Tambah role="dialog" dan aria-label pada chat panel
+- ✅ Tambah keyboard shortcut Escape untuk menutup chat
+- ✅ Tambah fileError state inline (menggantikan alert() browser)
+
+#### 7.3 Testing & Quality Assurance
+- ✅ Validasi build production berhasil tanpa error
+- ✅ Validasi integrasi WhatsApp (test message, notifikasi tiket)
+- ✅ Validasi semua API routes memiliki autentikasi
+- ✅ Validasi rate limiting pada login/register
 
 ## File Kritis yang Akan Dibuat
 
@@ -305,10 +318,7 @@ tailwind.config.js
 - [x] Integrasi Baileys WhatsApp Gateway (Tahap 5)
 - [x] Optimasi keamanan & performa (Tahap 6)
 
-### ✅ Completed (continued)
-- [x] Optimasi keamanan & performa (Tahap 6)
-
-### 🔄 In Progress
-- [ ] Polish UI/UX & Testing (Tahap 7)
+### ✅ Completed
+- [x] Polish UI/UX & Testing (Tahap 7)
 
 Rencana implementasi ini menyediakan pendekatan terstruktur untuk membangun sistem IT Helpdesk & WhatsApp Gateway terintegrasi sambil mengatasi semua requirement teknis, concern keamanan, dan objektif bisnis yang diuraikan dalam PRD.

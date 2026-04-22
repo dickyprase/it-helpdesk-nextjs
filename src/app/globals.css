@@ -2,32 +2,7 @@
 
 /* ===== Theme Variables ===== */
 
-/* Default fallback (dark) */
-:root {
-  --theme-bg-gradient-from: #0f172a;
-  --theme-bg-gradient-via: #172554;
-  --theme-bg-gradient-to: #1e1b4b;
-  --theme-nav-bg: rgba(15, 23, 42, 0.8);
-  --theme-nav-border: rgba(255, 255, 255, 0.06);
-  --theme-card-bg: rgba(255, 255, 255, 0.04);
-  --theme-card-border: rgba(255, 255, 255, 0.08);
-  --theme-card-bg-hover: rgba(255, 255, 255, 0.07);
-  --theme-form-bg: rgba(255, 255, 255, 0.05);
-  --theme-form-border: rgba(255, 255, 255, 0.1);
-  --theme-input-bg: rgba(255, 255, 255, 0.05);
-  --theme-input-border: rgba(255, 255, 255, 0.1);
-  --theme-text-primary: #ffffff;
-  --theme-text-secondary: rgba(191, 219, 254, 0.6);
-  --theme-text-muted: rgba(191, 219, 254, 0.4);
-  --theme-text-placeholder: rgba(255, 255, 255, 0.3);
-  --theme-text-icon: rgba(147, 197, 253, 0.5);
-  --theme-option-bg: #0f172a;
-  --theme-orb-1: rgba(59, 130, 246, 0.2);
-  --theme-orb-2: rgba(99, 102, 241, 0.15);
-  --theme-orb-3: rgba(168, 85, 247, 0.1);
-}
-
-/* Dark theme (explicit class) */
+/* Dark theme */
 .dark {
   --theme-bg-gradient-from: #0f172a;
   --theme-bg-gradient-via: #172554;
@@ -122,7 +97,6 @@ html.light {
 body {
   background: var(--theme-bg-gradient-from);
   color: var(--theme-text-primary);
-  font-family: Arial, Helvetica, sans-serif;
 }
 
 /* ===== Glassmorphism Utility Classes ===== */
@@ -193,4 +167,10 @@ html.light .theme-form-card {
 
 html.light .theme-nav {
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+/* Focus-visible for keyboard navigation */
+*:focus-visible {
+  outline: 2px solid rgb(99, 102, 241);
+  outline-offset: 2px;
 }

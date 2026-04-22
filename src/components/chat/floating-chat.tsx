@@ -82,6 +82,7 @@ export default function FloatingChat({ ticketId, sessionUser, initialMessages, i
   // Attachment state
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [filePreviewUrl, setFilePreviewUrl] = useState<string | null>(null);
+  const [fileError, setFileError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Voice recording state
@@ -129,6 +130,17 @@ export default function FloatingChat({ ticketId, sessionUser, initialMessages, i
       handleOpen();
     }
   }
+
+  // Close chat on Escape key
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key === 'Escape' && isOpen) {
+        handleClose();
+      }
+    }
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen]);
 
   // Keep the ref in sync with isOpen state
   useEffect(() => {
@@ -234,11 +246,12 @@ export default function FloatingChat({ ticketId, sessionUser, initialMessages, i
     if (!file) return;
 
     if (file.size > MAX_FILE_SIZE) {
-      alert('Ukuran file melebihi batas maksimal 100MB');
+      setFileError('Ukuran file melebihi batas maksimal 100MB');
       e.target.value = '';
       return;
     }
 
+    setFileError(null);
     setSelectedFile(file);
 
     if (file.type.startsWith('image/')) {
@@ -255,6 +268,7 @@ export default function FloatingChat({ ticketId, sessionUser, initialMessages, i
     }
     setSelectedFile(null);
     setFilePreviewUrl(null);
+    setFileError(null);
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
@@ -403,6 +417,8 @@ export default function FloatingChat({ ticketId, sessionUser, initialMessages, i
       {/* Chat Panel */}
       {isOpen && (
         <div
+          role="dialog"
+          aria-label="Live Chat"
           className={`fixed z-50 flex flex-col overflow-hidden shadow-2xl transition-all duration-200 ease-out
             inset-0 sm:inset-auto sm:bottom-24 sm:right-6 sm:w-[400px] sm:max-h-[70vh] sm:rounded-2xl
             ${isVisible ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 translate-y-4 sm:scale-95'}`}
@@ -433,6 +449,7 @@ export default function FloatingChat({ ticketId, sessionUser, initialMessages, i
             </div>
             <button
               onClick={handleClose}
+              aria-label="Tutup chat"
               className="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-white/10 transition-colors"
               style={{ color: 'var(--theme-text-secondary)' }}
             >
@@ -576,6 +593,12 @@ export default function FloatingChat({ ticketId, sessionUser, initialMessages, i
                   </div>
                 )}
 
+                {fileError && (
+                  <div className="mb-2 px-3 py-2 rounded-lg bg-red-500/10 border border-red-500/20">
+                    <p className="text-xs text-red-400">{fileError}</p>
+                  </div>
+                )}
+
                 {/* Recording indicator */}
                 {isRecording && (
                   <div className="mb-2 flex items-center gap-2 px-3 py-2 rounded-lg bg-red-500/10 border border-red-500/20">
@@ -707,6 +730,7 @@ export default function FloatingChat({ ticketId, sessionUser, initialMessages, i
         )}
         <button
           onClick={toggleChat}
+          aria-label={isOpen ? 'Tutup chat' : 'Buka chat'}
           className="relative w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-gradient-to-r from-green-500 to-emerald-600 flex items-center justify-center text-white shadow-lg shadow-green-500/30 hover:shadow-green-500/50 hover:scale-105 active:scale-95 transition-all duration-200"
         >
           {/* Animate icon switch */}

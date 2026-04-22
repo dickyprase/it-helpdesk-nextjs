@@ -25,6 +25,7 @@ export default function CreateTicketForm({ categories }: CreateTicketFormProps) 
     null
   );
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const [fileError, setFileError] = useState<string | null>(null);
 
   return (
     <div className="rounded-2xl p-8 theme-form-card">
@@ -133,15 +134,21 @@ export default function CreateTicketForm({ categories }: CreateTicketFormProps) 
               const maxSize = 100 * 1024 * 1024; // 100MB
               const oversized = files.filter((f) => f.size > maxSize);
               if (oversized.length > 0) {
-                alert(`File berikut melebihi batas 100MB: ${oversized.map((f) => f.name).join(', ')}`);
+                setFileError(`File berikut melebihi batas 100MB: ${oversized.map((f) => f.name).join(', ')}`);
                 e.target.value = '';
                 setSelectedFiles([]);
                 return;
               }
+              setFileError(null);
               setSelectedFiles(files);
             }}
             className="w-full px-4 py-3 rounded-xl theme-input transition-all duration-200 text-sm file:mr-4 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-blue-500/20 file:text-blue-400 hover:file:bg-blue-500/30"
           />
+          {fileError && (
+            <div className="mt-2 px-3 py-2 rounded-lg bg-red-500/10 border border-red-500/20">
+              <p className="text-xs text-red-400">{fileError}</p>
+            </div>
+          )}
           {selectedFiles.length > 0 && (
             <p className="mt-1.5 text-xs text-theme-text-muted">
               {selectedFiles.length} file dipilih: {selectedFiles.map((f) => f.name).join(', ')}

@@ -1,7 +1,14 @@
 import Link from 'next/link';
 import { LogIn, UserPlus } from 'lucide-react';
+import { getSession } from '@/lib/auth';
+import { redirect } from 'next/navigation';
 
-export default function Home() {
+export default async function Home() {
+  const session = await getSession();
+  if (session) {
+    redirect('/dashboard');
+  }
+
   return (
     <div className="theme-page flex items-center justify-center">
       <main className="container mx-auto px-4 py-16">

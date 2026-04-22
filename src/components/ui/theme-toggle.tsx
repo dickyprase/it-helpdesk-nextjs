@@ -15,6 +15,7 @@ export default function ThemeToggle() {
         color: 'var(--theme-text-muted)',
       }}
       title={theme === 'dark' ? 'Mode Terang' : 'Mode Gelap'}
+      aria-label={theme === 'dark' ? 'Ganti ke mode terang' : 'Ganti ke mode gelap'}
     >
       {theme === 'dark' ? (
         <Sun className="w-5 h-5" />

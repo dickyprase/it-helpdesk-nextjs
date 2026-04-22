@@ -118,3 +118,42 @@ export const sendMessageSchema = z.object({
 });
 
 export type SendMessageInput = z.infer<typeof sendMessageSchema>;
+
+// Profile Validations
+export const updateProfileSchema = z.object({
+  name: z
+    .string()
+    .trim()
+    .min(2, 'Nama minimal 2 karakter')
+    .max(100, 'Nama maksimal 100 karakter'),
+  email: z
+    .string()
+    .trim()
+    .min(1, 'Email wajib diisi')
+    .email('Format email tidak valid')
+    .transform((v) => v.toLowerCase()),
+  phone: z
+    .string()
+    .max(20, 'Nomor HP maksimal 20 karakter')
+    .optional()
+    .transform((val) => (val && val.trim().length > 0 ? val.trim() : undefined)),
+});
+
+export const changePasswordSchema = z.object({
+  currentPassword: z
+    .string()
+    .min(1, 'Password saat ini wajib diisi'),
+  newPassword: z
+    .string()
+    .min(6, 'Password baru minimal 6 karakter')
+    .max(100, 'Password baru maksimal 100 karakter'),
+  confirmNewPassword: z
+    .string()
+    .min(1, 'Konfirmasi password wajib diisi'),
+}).refine((data) => data.newPassword === data.confirmNewPassword, {
+  message: 'Password baru tidak cocok',
+  path: ['confirmNewPassword'],
+});
+
+export type UpdateProfileInput = z.infer<typeof updateProfileSchema>;
+export type ChangePasswordInput = z.infer<typeof changePasswordSchema>;
