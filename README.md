@@ -320,77 +320,76 @@ erDiagram
 
 ## API Documentation
 
-### API Routes (HTTP)
+> Aplikasi ini menggunakan **Next.js Server Actions** untuk semua operasi data (bukan REST API). Endpoint HTTP di bawah ini adalah satu-satunya route yang dapat di-consume secara langsung.
 
-| Method | Endpoint | Auth | Deskripsi |
-|--------|----------|------|-----------|
-| GET | `/api/uploads/[...path]` | Login required | Streaming file attachment (gambar/video) |
-| GET | `/api/chat/[ticketId]/sse` | Login required | SSE stream pesan chat real-time per tiket |
-| GET | `/api/whatsapp/sse` | MANAGER only | SSE stream status koneksi WA & QR code |
+### Autentikasi
 
-### Server Actions -- Auth (`src/lib/actions/auth.ts`)
+Semua endpoint menggunakan **cookie-based session**. Kirim cookie `helpdesk_session` yang didapat setelah login melalui UI.
 
-| Action | Auth | Deskripsi |
-|--------|------|-----------|
-| `loginAction(formData)` | Public | Login dengan email & password, buat session |
-| `registerAction(formData)` | Public | Registrasi user baru (role: USER) |
-| `logoutAction()` | Login required | Hapus session dan redirect ke login |
+### Endpoints
 
-### Server Actions -- Tickets (`src/lib/actions/tickets.ts`)
+#### `GET /api/uploads/{...path}`
 
-| Action | Auth | Deskripsi |
-|--------|------|-----------|
-| `createTicketAction(formData)` | USER only | Buat tiket baru + upload attachment |
-| `claimTicketAction(formData)` | STAFF / MANAGER | Klaim tiket OPEN (atomic locking) |
-| `updateTicketStatusAction(formData)` | MANAGER only | Ubah status tiket sesuai state machine |
-| `pendingTicketAction(formData)` | STAFF only | Set tiket ke PENDING + alasan |
-| `resolveTicketAction(formData)` | STAFF only | Resolve tiket + resolution note wajib |
-| `setDifficultyAction(formData)` | STAFF / MANAGER | Set level kesulitan (1/2/3) |
-| `assignTicketAction(formData)` | MANAGER only | Assign tiket ke staff tertentu |
-| `getCategories()` | - | Ambil semua kategori |
-| `getTickets(filters?)` | - | Ambil tiket dengan filter (status, kategori, search) |
-| `getTicketById(id)` | - | Ambil detail tiket + relasi |
-| `getStaffList()` | - | Ambil daftar staff/manager |
+Mengambil file attachment (gambar/video) yang diupload pada tiket atau chat.
 
-### Server Actions -- Chat (`src/lib/actions/chat.ts`)
+| Parameter | Lokasi | Deskripsi |
+|-----------|--------|-----------|
+| `path` | URL path | Path relatif file, e.g. `/api/uploads/{ticketId}/{filename}` |
 
-| Action | Auth | Deskripsi |
-|--------|------|-----------|
-| `sendMessageAction(formData)` | Login required | Kirim pesan teks + attachment opsional |
-| `sendVoiceNoteAction(formData)` | Login required | Kirim voice note |
-| `getChatMessages(ticketId)` | Login required | Ambil riwayat chat per tiket |
+**Auth**: Login required (cookie session)
 
-### Server Actions -- WhatsApp (`src/lib/actions/whatsapp.ts`)
+**Response**:
+- `200` -- File binary dengan `Content-Type` sesuai ekstensi
+- `401` -- Unauthorized
+- `404` -- File tidak ditemukan
 
-| Action | Auth | Deskripsi |
-|--------|------|-----------|
-| `connectWAAction()` | MANAGER only | Mulai koneksi WA (trigger QR) |
-| `disconnectWAAction()` | MANAGER only | Putus koneksi (sesi tetap tersimpan) |
-| `logoutWAAction()` | MANAGER only | Logout WA + hapus sesi |
-| `getWAStatus()` | - | Status koneksi, QR code, hasSession |
-| `getWASettings()` | - | Pengaturan WA (is_enabled, status) |
-| `toggleWANotifications()` | MANAGER only | Toggle notifikasi on/off |
-| `getTemplates()` | - | Ambil semua template notifikasi |
-| `upsertTemplate(formData)` | MANAGER only | Buat/update template |
-| `deleteTemplate(id)` | MANAGER only | Hapus template |
-| `sendTestMessageAction(formData)` | MANAGER only | Kirim pesan test WA |
-| `sendTicketNotification(event, ticketId)` | Internal | Engine notifikasi otomatis |
+**Headers Response**:
+```
+Content-Type: image/png | image/jpeg | video/mp4 | ...
+X-Content-Type-Options: nosniff
+Content-Security-Policy: default-src 'none'
+Cache-Control: private, max-age=31536000, immutable
+```
 
-### Server Actions -- Leaderboard (`src/lib/actions/leaderboard.ts`)
+---
 
-| Action | Auth | Deskripsi |
-|--------|------|-----------|
-| `getLeaderboard(view, month, year)` | - | Agregasi poin staff (bulanan/tahunan) |
-| `getStaffStats(staffId, view, month, year)` | - | Detail statistik per staff |
-| `getAvailablePeriods()` | - | Periode yang memiliki data |
+#### `GET /api/chat/{ticketId}/sse`
 
-### Server Actions -- Profile (`src/lib/actions/profile.ts`)
+Server-Sent Events stream untuk menerima pesan chat real-time pada tiket tertentu.
 
-| Action | Auth | Deskripsi |
-|--------|------|-----------|
-| `getProfile()` | Login required | Ambil profil user saat ini |
-| `updateProfileAction(formData)` | Login required | Update nama, email, phone |
-| `changePasswordAction(formData)` | Login required | Ganti password (verifikasi password lama) |
+| Parameter | Lokasi | Deskripsi |
+|-----------|--------|-----------|
+| `ticketId` | URL path | UUID tiket |
+
+**Auth**: Login required (cookie session)
+
+**Response**: `text/event-stream`
+
+**Format Event**:
+```
+data: {"id":"uuid","message":"teks","ticket_id":"uuid","sender_id":"uuid","sender_name":"Nama","sender_role":"USER","created_at":"ISO8601","attachment_url":null,"attachment_type":null,"is_voice_note":false}
+```
+
+**Keepalive**: Server mengirim `: keepalive\n\n` setiap 30 detik.
+
+---
+
+#### `GET /api/whatsapp/sse`
+
+Server-Sent Events stream untuk memonitor status koneksi WhatsApp dan menerima QR code.
+
+**Auth**: MANAGER only (cookie session)
+
+**Response**: `text/event-stream`
+
+**Format Event**:
+```
+data: {"type":"status","data":"connected"}
+data: {"type":"qr","data":"qr-code-string"}
+data: {"type":"message","data":"Pesan sistem"}
+```
+
+**Status values**: `disconnected`, `connecting`, `reconnecting`, `qr_ready`, `connected`
 
 ---
 
