@@ -3,9 +3,7 @@
 ## Konteks Proyek
 Proyek ini bertujuan membangun sistem IT Helpdesk komprehensif dengan fungsionalitas WhatsApp Gateway terintegrasi. Sistem akan menangani manajemen tiket dengan leaderboard gamifikasi, chat real-time, dan notifikasi WhatsApp otomatis. Tantangan utama adalah mengimplementasikan aplikasi Next.js monolitik dimana WhatsApp Gateway (Baileys) berjalan sebagai singleton service dalam proses yang sama, memastikan operasi tiket atomik dan penanganan data yang aman.
 
-**Nama Proyek**: Sistem Manajemen IT Helpdesk & Integrated WA Gateway  
-**Nilai Proyek**: Rp 7.000.000,-  
-**Durasi Estimasi**: 10-14 hari kerja
+**Nama Proyek**: Sistem Manajemen IT Helpdesk & Integrated WA Gateway
 
 ## Arsitektur Teknis
 
@@ -54,7 +52,6 @@ Notification_Templates: id, event_type, template_body, variables, created_at, up
 ## Fase Implementasi
 
 ### Fase 1: Fondasi Proyek & Setup Database
-**Durasi**: 1-2 hari
 
 #### 1.1 Inisialisasi Proyek
 - ✅ Inisialisasi proyek Next.js 14 dengan TypeScript
@@ -75,7 +72,6 @@ Notification_Templates: id, event_type, template_body, variables, created_at, up
 - ✅ Buat halaman login/register dengan validasi Zod
 
 ### Fase 2: Sistem Ticketing Inti
-**Durasi**: 2-3 hari
 
 #### 2.1 Backend Manajemen Tiket
 - ✅ Buat Server Actions untuk operasi CRUD tiket
@@ -103,7 +99,6 @@ Notification_Templates: id, event_type, template_body, variables, created_at, up
 - ✅ Test skenario race condition
 
 ### Fase 3: Sistem Leaderboard Gamifikasi
-**Durasi**: 1-2 hari
 
 #### 3.1 Logic Scoring
 - ✅ Implementasi kalkulasi poin: `Score = 10 * Difficulty (1/2/3)`
@@ -118,7 +113,6 @@ Notification_Templates: id, event_type, template_body, variables, created_at, up
 - ✅ Implementasi detail log per staff dengan link ke tiket
 
 ### Fase 4: Sistem Chat Real-time
-**Durasi**: 2-3 hari
 
 #### 4.1 Infrastruktur Backend Chat
 - ✅ Setup endpoint Server-Sent Events (SSE)
@@ -133,7 +127,6 @@ Notification_Templates: id, event_type, template_body, variables, created_at, up
 - ✅ Chat ditutup otomatis saat tiket CLOSED
 
 ### Fase 5: Integrasi WhatsApp Gateway
-**Durasi**: 3-4 hari
 
 #### 5.1 Baileys Singleton Service
 - ✅ Buat WhatsApp service dengan singleton pattern
@@ -159,7 +152,6 @@ Notification_Templates: id, event_type, template_body, variables, created_at, up
 - ✅ Integrasi trigger ke semua server actions tiket
 
 ### Fase 6: Optimasi Keamanan & Performa
-**Durasi**: 1-2 hari
 
 #### 6.1 Penguatan Keamanan
 - ✅ Implementasi autentikasi pada semua API routes (SSE endpoints, uploads)
@@ -184,7 +176,6 @@ Notification_Templates: id, event_type, template_body, variables, created_at, up
 - ✅ Fix PrismaPg adapter creation (hanya saat instance baru)
 
 ### Fase 7: Polish UI/UX & Testing
-**Durasi**: 1-2 hari
 
 #### 7.1 Refinement UI/UX
 - ✅ Buat loading.tsx skeleton loader untuk semua dashboard routes
