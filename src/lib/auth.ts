@@ -1,4 +1,5 @@
 import { cookies } from 'next/headers';
+import { NextRequest } from 'next/server';
 import { prisma } from './db';
 import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
@@ -41,6 +42,10 @@ export async function createSession(userId: string): Promise<string> {
   return sessionId;
 }
 
+/**
+ * Get session from cookie (for server components and server actions).
+ * Optimized: single DB query with JOIN instead of two sequential queries.
+ */
 export async function getSession(): Promise<SessionUser | null> {
   const cookieStore = await cookies();
   const sessionId = cookieStore.get(SESSION_COOKIE)?.value;
@@ -49,32 +54,54 @@ export async function getSession(): Promise<SessionUser | null> {
 
   const session = await prisma.session.findUnique({
     where: { id: sessionId },
+    include: {
+      user: {
+        select: { id: true, name: true, email: true, role: true },
+      },
+    },
   });
 
   if (!session) {
-    // Stale cookie — clear it
     cookieStore.delete(SESSION_COOKIE);
     return null;
   }
 
   if (new Date() > session.expires_at) {
-    await prisma.session.delete({ where: { id: sessionId } });
+    await prisma.session.delete({ where: { id: sessionId } }).catch(() => {});
     cookieStore.delete(SESSION_COOKIE);
     return null;
   }
 
-  const user = await prisma.user.findUnique({
-    where: { id: session.user_id },
-    select: { id: true, name: true, email: true, role: true },
+  if (!session.user) {
+    await prisma.session.delete({ where: { id: sessionId } }).catch(() => {});
+    cookieStore.delete(SESSION_COOKIE);
+    return null;
+  }
+
+  return session.user;
+}
+
+/**
+ * Get session from a NextRequest object (for API route handlers).
+ * Does NOT modify cookies -- read-only validation.
+ */
+export async function getSessionFromRequest(request: NextRequest): Promise<SessionUser | null> {
+  const sessionId = request.cookies.get(SESSION_COOKIE)?.value;
+  if (!sessionId) return null;
+
+  const session = await prisma.session.findUnique({
+    where: { id: sessionId },
+    include: {
+      user: {
+        select: { id: true, name: true, email: true, role: true },
+      },
+    },
   });
 
-  if (!user) {
-    await prisma.session.delete({ where: { id: sessionId } });
-    cookieStore.delete(SESSION_COOKIE);
-    return null;
-  }
+  if (!session || !session.user) return null;
+  if (new Date() > session.expires_at) return null;
 
-  return user;
+  return session.user;
 }
 
 export async function destroySession(): Promise<void> {
@@ -85,6 +112,17 @@ export async function destroySession(): Promise<void> {
     await prisma.session.delete({ where: { id: sessionId } }).catch(() => {});
     cookieStore.delete(SESSION_COOKIE);
   }
+}
+
+/**
+ * Remove all expired sessions from the database.
+ * Call periodically (e.g., on login or via a cron endpoint).
+ */
+export async function cleanupExpiredSessions(): Promise<number> {
+  const result = await prisma.session.deleteMany({
+    where: { expires_at: { lt: new Date() } },
+  });
+  return result.count;
 }
 
 export async function hashPassword(password: string): Promise<string> {

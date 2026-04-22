@@ -72,6 +72,7 @@ function formatRecordingDuration(seconds: number): string {
 
 export default function FloatingChat({ ticketId, sessionUser, initialMessages, isClosed }: Props) {
   const [isOpen, setIsOpen] = useState(false);
+  const [isVisible, setIsVisible] = useState(false); // controls CSS animation
   const isOpenRef = useRef(false);
   const [messages, setMessages] = useState<ChatMessage[]>(initialMessages);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -101,6 +102,33 @@ export default function FloatingChat({ ticketId, sessionUser, initialMessages, i
     sendVoiceNoteAction,
     null,
   );
+
+  // Open/close with animation
+  function handleOpen() {
+    setIsOpen(true);
+    // Trigger enter animation on next frame
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        setIsVisible(true);
+      });
+    });
+  }
+
+  function handleClose() {
+    setIsVisible(false);
+    // Wait for exit animation to finish before unmounting
+    setTimeout(() => {
+      setIsOpen(false);
+    }, 200);
+  }
+
+  function toggleChat() {
+    if (isOpen) {
+      handleClose();
+    } else {
+      handleOpen();
+    }
+  }
 
   // Keep the ref in sync with isOpen state
   useEffect(() => {
@@ -375,9 +403,10 @@ export default function FloatingChat({ ticketId, sessionUser, initialMessages, i
       {/* Chat Panel */}
       {isOpen && (
         <div
-          className="fixed bottom-24 right-6 z-50 w-[360px] sm:w-[400px] flex flex-col rounded-2xl shadow-2xl overflow-hidden"
+          className={`fixed z-50 flex flex-col overflow-hidden shadow-2xl transition-all duration-200 ease-out
+            inset-0 sm:inset-auto sm:bottom-24 sm:right-6 sm:w-[400px] sm:max-h-[70vh] sm:rounded-2xl
+            ${isVisible ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 translate-y-4 sm:scale-95'}`}
           style={{
-            maxHeight: '70vh',
             background: 'var(--theme-bg-gradient-from)',
             border: '1px solid var(--theme-card-border)',
           }}
@@ -403,7 +432,7 @@ export default function FloatingChat({ ticketId, sessionUser, initialMessages, i
               </span>
             </div>
             <button
-              onClick={() => setIsOpen(false)}
+              onClick={handleClose}
               className="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-white/10 transition-colors"
               style={{ color: 'var(--theme-text-secondary)' }}
             >
@@ -442,7 +471,7 @@ export default function FloatingChat({ ticketId, sessionUser, initialMessages, i
                     className={`flex ${isOwn ? 'justify-end' : 'justify-start'}`}
                   >
                     <div
-                      className={`max-w-[80%] px-3.5 py-2.5 shadow-sm ${
+                      className={`max-w-[85%] sm:max-w-[80%] px-3.5 py-2.5 shadow-sm ${
                         isOwn
                           ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-2xl rounded-br-sm'
                           : 'rounded-2xl rounded-bl-sm'
@@ -484,7 +513,7 @@ export default function FloatingChat({ ticketId, sessionUser, initialMessages, i
                       {/* Message text */}
                       {shouldShowMessageText(msg) && (
                         <p
-                          className={`text-sm leading-relaxed whitespace-pre-wrap ${
+                          className={`text-sm leading-relaxed whitespace-pre-wrap break-words ${
                             isOwn ? 'text-white' : ''
                           }`}
                           style={
@@ -520,7 +549,7 @@ export default function FloatingChat({ ticketId, sessionUser, initialMessages, i
 
           {/* Input Area */}
           <div
-            className="shrink-0 px-4 py-3"
+            className="shrink-0 px-3 sm:px-4 py-2.5 sm:py-3"
             style={{
               borderTop: '1px solid var(--theme-card-border)',
               background: 'var(--theme-nav-bg)',
@@ -581,7 +610,7 @@ export default function FloatingChat({ ticketId, sessionUser, initialMessages, i
                       </div>
                     )}
                     <span
-                      className="text-xs truncate flex-1"
+                      className="text-xs truncate flex-1 min-w-0"
                       style={{ color: 'var(--theme-text-secondary)' }}
                     >
                       {selectedFile.name}
@@ -607,7 +636,7 @@ export default function FloatingChat({ ticketId, sessionUser, initialMessages, i
                 />
 
                 {/* Input bar */}
-                <form key={formKey} action={handleFormSubmit} className="flex items-center gap-2">
+                <form key={formKey} action={handleFormSubmit} className="flex items-center gap-1.5 sm:gap-2">
                   <input type="hidden" name="ticket_id" value={ticketId} />
 
                   {/* Attachment button */}
@@ -615,7 +644,7 @@ export default function FloatingChat({ ticketId, sessionUser, initialMessages, i
                     type="button"
                     onClick={() => fileInputRef.current?.click()}
                     disabled={isRecording}
-                    className="w-9 h-9 rounded-xl flex items-center justify-center hover:bg-white/10 transition-colors shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="w-8 h-8 sm:w-9 sm:h-9 rounded-lg sm:rounded-xl flex items-center justify-center hover:bg-white/10 transition-colors shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
                     style={{ color: 'var(--theme-text-icon)' }}
                   >
                     <Paperclip className="w-4 h-4" />
@@ -628,7 +657,7 @@ export default function FloatingChat({ ticketId, sessionUser, initialMessages, i
                     placeholder={isRecording ? 'Merekam...' : 'Ketik pesan...'}
                     autoComplete="off"
                     disabled={isRecording}
-                    className="flex-1 px-3.5 py-2 rounded-xl text-sm transition-all duration-200 outline-none focus:ring-2 focus:ring-blue-500/40 disabled:opacity-50"
+                    className="flex-1 min-w-0 px-3 py-2 sm:px-3.5 rounded-lg sm:rounded-xl text-sm transition-all duration-200 outline-none focus:ring-2 focus:ring-blue-500/40 disabled:opacity-50"
                     style={{
                       background: 'var(--theme-input-bg)',
                       border: '1px solid var(--theme-input-border)',
@@ -641,7 +670,7 @@ export default function FloatingChat({ ticketId, sessionUser, initialMessages, i
                     type="button"
                     onClick={toggleRecording}
                     disabled={msgPending || vnPending}
-                    className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all duration-200 shrink-0 disabled:opacity-50 disabled:cursor-not-allowed ${
+                    className={`w-8 h-8 sm:w-9 sm:h-9 rounded-lg sm:rounded-xl flex items-center justify-center transition-all duration-200 shrink-0 disabled:opacity-50 disabled:cursor-not-allowed ${
                       isRecording
                         ? 'text-red-500 animate-pulse hover:bg-red-500/10'
                         : 'hover:bg-white/10'
@@ -655,7 +684,7 @@ export default function FloatingChat({ ticketId, sessionUser, initialMessages, i
                   <button
                     type="submit"
                     disabled={msgPending || vnPending || isRecording}
-                    className="w-9 h-9 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 flex items-center justify-center text-white shadow-lg shadow-blue-500/20 hover:shadow-blue-500/40 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
+                    className="w-8 h-8 sm:w-9 sm:h-9 rounded-lg sm:rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 flex items-center justify-center text-white shadow-lg shadow-blue-500/20 hover:shadow-blue-500/40 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
                   >
                     {msgPending || vnPending ? (
                       <Loader2 className="w-4 h-4 animate-spin" />
@@ -670,17 +699,31 @@ export default function FloatingChat({ ticketId, sessionUser, initialMessages, i
         </div>
       )}
 
-      {/* Floating Bubble Button */}
-      <div className="fixed bottom-6 right-6 z-50">
+      {/* Floating Bubble Button -- hidden on mobile when panel is open (fullscreen) */}
+      <div className={`fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-50 ${isOpen ? 'hidden sm:block' : ''}`}>
         {/* Pulse animation ring */}
         {!isOpen && (
           <span className="absolute inset-0 rounded-full bg-gradient-to-r from-green-500 to-emerald-600 animate-ping opacity-20" />
         )}
         <button
-          onClick={() => setIsOpen((o) => !o)}
-          className="relative w-14 h-14 rounded-full bg-gradient-to-r from-green-500 to-emerald-600 flex items-center justify-center text-white shadow-lg shadow-green-500/30 hover:shadow-green-500/50 hover:scale-105 transition-all duration-200"
+          onClick={toggleChat}
+          className="relative w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-gradient-to-r from-green-500 to-emerald-600 flex items-center justify-center text-white shadow-lg shadow-green-500/30 hover:shadow-green-500/50 hover:scale-105 active:scale-95 transition-all duration-200"
         >
-          <Headset className="w-6 h-6" />
+          {/* Animate icon switch */}
+          <span
+            className={`absolute inset-0 flex items-center justify-center transition-all duration-200 ${
+              isOpen ? 'opacity-0 rotate-90 scale-50' : 'opacity-100 rotate-0 scale-100'
+            }`}
+          >
+            <Headset className="w-5 h-5 sm:w-6 sm:h-6" />
+          </span>
+          <span
+            className={`absolute inset-0 flex items-center justify-center transition-all duration-200 ${
+              isOpen ? 'opacity-100 rotate-0 scale-100' : 'opacity-0 -rotate-90 scale-50'
+            }`}
+          >
+            <X className="w-5 h-5 sm:w-6 sm:h-6" />
+          </span>
 
           {/* Unread badge */}
           {!isOpen && unreadCount > 0 && (

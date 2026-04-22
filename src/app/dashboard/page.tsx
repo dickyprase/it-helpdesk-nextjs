@@ -102,21 +102,23 @@ export default async function DashboardPage() {
             </div>
           </Link>
 
-          {/* Leaderboard */}
-          <Link href="/dashboard/leaderboard" className="group relative overflow-hidden rounded-2xl p-6 transition-all duration-300 hover:scale-[1.02] block theme-card">
-            <div className="absolute inset-0 bg-gradient-to-br from-amber-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-            <div className="relative z-10">
-              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center shadow-lg shadow-amber-500/20 mb-4">
-                <Trophy className="w-6 h-6 text-white" />
+          {/* Leaderboard (Staff & Manager only) */}
+          {(user.role === 'STAFF' || user.role === 'MANAGER') && (
+            <Link href="/dashboard/leaderboard" className="group relative overflow-hidden rounded-2xl p-6 transition-all duration-300 hover:scale-[1.02] block theme-card">
+              <div className="absolute inset-0 bg-gradient-to-br from-amber-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+              <div className="relative z-10">
+                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center shadow-lg shadow-amber-500/20 mb-4">
+                  <Trophy className="w-6 h-6 text-white" />
+                </div>
+                <h3 className="text-lg font-semibold text-theme-text-primary mb-1">
+                  Leaderboard
+                </h3>
+                <p className="text-sm text-theme-text-muted">
+                  Lihat peringkat performa staff IT
+                </p>
               </div>
-              <h3 className="text-lg font-semibold text-theme-text-primary mb-1">
-                Leaderboard
-              </h3>
-              <p className="text-sm text-theme-text-muted">
-                Lihat peringkat performa staff IT
-              </p>
-            </div>
-          </Link>
+            </Link>
+          )}
 
           {/* Chat */}
           <Link href="/dashboard/tickets" className="group relative overflow-hidden rounded-2xl p-6 transition-all duration-300 hover:scale-[1.02] block theme-card">

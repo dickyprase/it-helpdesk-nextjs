@@ -1,27 +1,35 @@
-import { NextRequest } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
+import { getSessionFromRequest } from '@/lib/auth';
 import { chatEmitter } from '@/lib/chat-emitter';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET(
-  _request: NextRequest,
+  request: NextRequest,
   { params }: { params: Promise<{ ticketId: string }> }
 ) {
+  // Auth: must be logged in
+  const session = await getSessionFromRequest(request);
+  if (!session) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
   const { ticketId } = await params;
 
   const encoder = new TextEncoder();
   const stream = new ReadableStream({
     start(controller) {
-      // Send initial keepalive
       controller.enqueue(encoder.encode(': connected\n\n'));
 
-      // Subscribe to new messages for this ticket
       const unsubscribe = chatEmitter.subscribe(ticketId, (msg) => {
-        const data = JSON.stringify(msg);
-        controller.enqueue(encoder.encode(`data: ${data}\n\n`));
+        try {
+          const data = JSON.stringify(msg);
+          controller.enqueue(encoder.encode(`data: ${data}\n\n`));
+        } catch {
+          // stream closed
+        }
       });
 
-      // Keepalive every 30s to prevent timeout
       const keepalive = setInterval(() => {
         try {
           controller.enqueue(encoder.encode(': keepalive\n\n'));
@@ -30,8 +38,7 @@ export async function GET(
         }
       }, 30000);
 
-      // Cleanup on close
-      _request.signal.addEventListener('abort', () => {
+      request.signal.addEventListener('abort', () => {
         unsubscribe();
         clearInterval(keepalive);
         try {

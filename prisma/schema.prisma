@@ -24,6 +24,7 @@ model User {
   id            String   @id @default(uuid())
   name          String
   email         String   @unique
+  phone         String?  // WhatsApp number, e.g. "08123456789" or "628123456789"
   password_hash String
   role          Role     @default(USER)
   created_at    DateTime @default(now())
@@ -43,6 +44,7 @@ model Session {
   expires_at DateTime
 
   @@index([user_id])
+  @@index([expires_at])
 }
 
 model Category {
@@ -77,6 +79,12 @@ model Ticket {
   chats            Chat[]
   leaderboard_logs LeaderboardLog[]
   attachments      TicketAttachment[]
+
+  @@index([status])
+  @@index([category_id])
+  @@index([user_id])
+  @@index([staff_id])
+  @@index([created_at])
 }
 
 model TicketAttachment {
@@ -109,6 +117,9 @@ model Chat {
   sender     User     @relation(fields: [sender_id], references: [id])
   
   created_at DateTime @default(now())
+
+  @@index([ticket_id, created_at])
+  @@index([sender_id])
 }
 
 model LeaderboardLog {
@@ -124,6 +135,10 @@ model LeaderboardLog {
   ticket       Ticket   @relation(fields: [ticket_id], references: [id])
   
   created_at   DateTime @default(now())
+
+  @@index([staff_id])
+  @@index([ticket_id])
+  @@index([period_month, period_year])
 }
 
 model WA_Setting {

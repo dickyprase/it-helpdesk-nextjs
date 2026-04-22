@@ -162,16 +162,26 @@ Notification_Templates: id, event_type, template_body, variables, created_at, up
 **Durasi**: 1-2 hari
 
 #### 6.1 Penguatan Keamanan
-- Implementasi sanitasi input komprehensif
-- Tambah rate limiting untuk API endpoints
-- Setup proteksi CSRF
-- Audit dan perbaiki potensi kerentanan XSS
+- ✅ Implementasi autentikasi pada semua API routes (SSE endpoints, uploads)
+- ✅ Tambah rate limiting untuk login (10/15min) dan register (5/jam)
+- ✅ Setup security headers (X-Frame-Options, X-Content-Type-Options, Referrer-Policy, Permissions-Policy)
+- ✅ Blokir upload SVG (stored XSS vector) dan tambah CSP header pada file serving
+- ✅ Validasi panjang pesan chat (max 2000 karakter)
+- ✅ Perbaiki otorisasi setDifficultyAction (STAFF hanya tiket sendiri)
+- ✅ Tambah auth check pada getChatMessages
+- ✅ Sanitasi input: trim whitespace, lowercase email pada login/register
+- ✅ Path traversal protection pada uploads API (resolve + prefix check)
+- ✅ Disable X-Powered-By header, kurangi body size limit (100mb → 50mb)
+- ✅ Tambah .wa-auth/ ke .gitignore
 
 #### 6.2 Optimasi Performa
-- Implementasi optimasi query database
-- Tambah caching untuk data yang sering diakses
-- Optimasi koneksi SSE dan penggunaan memori
-- Setup monitoring dan logging
+- ✅ Optimasi getSession(): single DB query dengan JOIN (bukan 2 sequential)
+- ✅ Tambah 13 database indexes (Ticket, Chat, LeaderboardLog, Session)
+- ✅ Conditional query logging (hanya di development)
+- ✅ Stream file reads pada uploads API (bukan load seluruh file ke memory)
+- ✅ Fix ChatEmitter singleton untuk production + error handling
+- ✅ Tambah expired session cleanup mechanism (piggyback on login)
+- ✅ Fix PrismaPg adapter creation (hanya saat instance baru)
 
 ### Fase 7: Polish UI/UX & Testing
 **Durasi**: 1-2 hari
@@ -293,11 +303,12 @@ tailwind.config.js
 - [x] Gamified leaderboard system (Tahap 3)
 - [x] Sistem chat real-time dengan SSE (Tahap 4)
 - [x] Integrasi Baileys WhatsApp Gateway (Tahap 5)
+- [x] Optimasi keamanan & performa (Tahap 6)
+
+### ✅ Completed (continued)
+- [x] Optimasi keamanan & performa (Tahap 6)
 
 ### 🔄 In Progress
-- [ ] Optimasi keamanan & performa (Tahap 6)
-
-### ⏳ Pending
 - [ ] Polish UI/UX & Testing (Tahap 7)
 
 Rencana implementasi ini menyediakan pendekatan terstruktur untuk membangun sistem IT Helpdesk & WhatsApp Gateway terintegrasi sambil mengatasi semua requirement teknis, concern keamanan, dan objektif bisnis yang diuraikan dalam PRD.

@@ -114,6 +114,10 @@ export async function sendMessageAction(
     }
   }
 
+  if (message && message.length > 2000) {
+    return { success: false, error: 'Pesan harus 1-2000 karakter' };
+  }
+
   // Must have either message or attachment
   if (!message && !attachmentUrl) {
     return { success: false, error: 'Pesan atau lampiran wajib diisi' };
@@ -172,6 +176,9 @@ export async function sendVoiceNoteAction(
 }
 
 export async function getChatMessages(ticketId: string) {
+  const session = await getSession();
+  if (!session) return [];
+
   return prisma.chat.findMany({
     where: { ticket_id: ticketId },
     include: {

@@ -47,3 +47,6 @@ next-env.d.ts
 
 # editor
 .openclaude/
+
+# WhatsApp auth session
+.wa-auth/

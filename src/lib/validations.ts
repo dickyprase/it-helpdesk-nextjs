@@ -3,8 +3,10 @@ import { z } from 'zod';
 export const loginSchema = z.object({
   email: z
     .string()
+    .trim()
     .min(1, 'Email wajib diisi')
-    .email('Format email tidak valid'),
+    .email('Format email tidak valid')
+    .transform((v) => v.toLowerCase()),
   password: z
     .string()
     .min(1, 'Password wajib diisi'),
@@ -13,12 +15,20 @@ export const loginSchema = z.object({
 export const registerSchema = z.object({
   name: z
     .string()
+    .trim()
     .min(2, 'Nama minimal 2 karakter')
     .max(100, 'Nama maksimal 100 karakter'),
   email: z
     .string()
+    .trim()
     .min(1, 'Email wajib diisi')
-    .email('Format email tidak valid'),
+    .email('Format email tidak valid')
+    .transform((v) => v.toLowerCase()),
+  phone: z
+    .string()
+    .max(20, 'Nomor HP maksimal 20 karakter')
+    .optional()
+    .transform((val) => (val && val.trim().length > 0 ? val.trim() : undefined)),
   password: z
     .string()
     .min(6, 'Password minimal 6 karakter')

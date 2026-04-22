@@ -131,7 +131,7 @@ export async function createTicketAction(
   await saveAttachments(files, ticket.id, session.id);
 
   // Notify
-  sendTicketNotification(TICKET_EVENTS.TICKET_CREATED, ticket.id).catch(() => {});
+  sendTicketNotification(TICKET_EVENTS.TICKET_CREATED, ticket.id).catch((err) => console.error('[WA Notification] Unhandled:', err));
 
   revalidatePath('/dashboard/tickets');
   redirect(`/dashboard/tickets/${ticket.id}`);
@@ -193,7 +193,7 @@ export async function claimTicketAction(
     return { success: false, error: message };
   }
 
-  sendTicketNotification(TICKET_EVENTS.TICKET_IN_PROGRESS, ticketId).catch(() => {});
+  sendTicketNotification(TICKET_EVENTS.TICKET_IN_PROGRESS, ticketId).catch((err) => console.error('[WA Notification] Unhandled:', err));
 
   revalidatePath('/dashboard/tickets');
   revalidatePath(`/dashboard/tickets/${ticketId}`);
@@ -275,7 +275,7 @@ export async function updateTicketStatusAction(
   };
   const event = eventMap[parsed.data.status];
   if (event) {
-    sendTicketNotification(event, parsed.data.ticket_id).catch(() => {});
+    sendTicketNotification(event, parsed.data.ticket_id).catch((err) => console.error('[WA Notification] Unhandled:', err));
   }
 
   revalidatePath('/dashboard/tickets');
@@ -334,7 +334,7 @@ export async function pendingTicketAction(
     },
   });
 
-  sendTicketNotification(TICKET_EVENTS.TICKET_PENDING, parsed.data.ticket_id).catch(() => {});
+  sendTicketNotification(TICKET_EVENTS.TICKET_PENDING, parsed.data.ticket_id).catch((err) => console.error('[WA Notification] Unhandled:', err));
 
   revalidatePath('/dashboard/tickets');
   revalidatePath(`/dashboard/tickets/${parsed.data.ticket_id}`);
@@ -396,7 +396,7 @@ export async function resolveTicketAction(
   const files = formData.getAll('attachments') as File[];
   await saveAttachments(files, parsed.data.ticket_id, session.id);
 
-  sendTicketNotification(TICKET_EVENTS.TICKET_RESOLVED, parsed.data.ticket_id).catch(() => {});
+  sendTicketNotification(TICKET_EVENTS.TICKET_RESOLVED, parsed.data.ticket_id).catch((err) => console.error('[WA Notification] Unhandled:', err));
 
   revalidatePath('/dashboard/tickets');
   revalidatePath(`/dashboard/tickets/${parsed.data.ticket_id}`);
@@ -431,6 +431,11 @@ export async function setDifficultyAction(
   });
   if (!ticket) {
     return { success: false, error: 'Tiket tidak ditemukan' };
+  }
+
+  // STAFF can only change difficulty on their own tickets
+  if (session.role === 'STAFF' && ticket.staff_id !== session.id) {
+    return { success: false, error: 'Anda hanya dapat mengatur kesulitan tiket yang ditugaskan kepada Anda' };
   }
 
   await prisma.ticket.update({
@@ -487,7 +492,7 @@ export async function assignTicketAction(
     },
   });
 
-  sendTicketNotification(TICKET_EVENTS.TICKET_ASSIGNED, parsed.data.ticket_id).catch(() => {});
+  sendTicketNotification(TICKET_EVENTS.TICKET_ASSIGNED, parsed.data.ticket_id).catch((err) => console.error('[WA Notification] Unhandled:', err));
 
   revalidatePath('/dashboard/tickets');
   revalidatePath(`/dashboard/tickets/${parsed.data.ticket_id}`);

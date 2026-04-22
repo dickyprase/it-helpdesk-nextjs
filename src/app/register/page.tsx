@@ -8,6 +8,7 @@ import {
   Mail,
   Lock,
   User,
+  Phone,
   AlertCircle,
   Loader2,
 } from 'lucide-react';
@@ -110,6 +111,36 @@ export default function RegisterPage() {
               {state?.fieldErrors?.email && (
                 <p className="mt-1.5 text-xs text-red-400">
                   {state.fieldErrors.email[0]}
+                </p>
+              )}
+            </div>
+
+            {/* Phone (optional) */}
+            <div>
+              <label
+                htmlFor="phone"
+                className="block text-sm font-medium text-theme-text-secondary mb-2"
+              >
+                No. WhatsApp{' '}
+                <span className="text-theme-text-muted font-normal">(opsional)</span>
+              </label>
+              <div className="relative">
+                <Phone className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-theme-text-icon" />
+                <input
+                  id="phone"
+                  name="phone"
+                  type="tel"
+                  autoComplete="tel"
+                  placeholder="08123456789"
+                  className="w-full pl-11 pr-4 py-3 rounded-xl theme-input transition-all duration-200"
+                />
+              </div>
+              <p className="mt-1 text-xs text-theme-text-muted">
+                Untuk menerima notifikasi WhatsApp terkait tiket Anda
+              </p>
+              {state?.fieldErrors?.phone && (
+                <p className="mt-1.5 text-xs text-red-400">
+                  {state.fieldErrors.phone[0]}
                 </p>
               )}
             </div>

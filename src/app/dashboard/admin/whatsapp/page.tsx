@@ -1,6 +1,6 @@
 import { getSession } from '@/lib/auth';
 import { logoutAction } from '@/lib/actions/auth';
-import { getWASettings, getTemplates } from '@/lib/actions/whatsapp';
+import { getWASettings, getTemplates, getWAStatus } from '@/lib/actions/whatsapp';
 import ThemeToggle from '@/components/ui/theme-toggle';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
@@ -11,8 +11,10 @@ import {
   Settings,
   Wifi,
   FileText,
+  SendHorizonal,
 } from 'lucide-react';
 import WAConnection from './wa-connection';
+import WATestMessage from './wa-test-message';
 import TemplateForm from './template-form';
 
 const roleBadgeColor: Record<string, string> = {
@@ -38,9 +40,10 @@ export default async function WhatsAppAdminPage() {
     redirect('/dashboard');
   }
 
-  const [settings, templates] = await Promise.all([
+  const [settings, templates, waStatus] = await Promise.all([
     getWASettings(),
     getTemplates(),
+    getWAStatus(),
   ]);
 
   const serializedTemplates = templates.map((t) => ({
@@ -138,10 +141,30 @@ export default async function WhatsAppAdminPage() {
           <WAConnection
             initialStatus={settings.connection_status}
             isEnabled={settings.is_enabled}
+            hasSession={waStatus.hasSession}
           />
         </div>
 
-        {/* Section 2: Template Notifikasi */}
+        {/* Section 2: Test Pesan */}
+        <div className="rounded-2xl p-6 sm:p-8 mb-8 theme-card">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-blue-500/20">
+              <SendHorizonal className="w-5 h-5 text-white" />
+            </div>
+            <div>
+              <h2 className="text-xl font-semibold text-theme-text-primary">
+                Test Pesan WhatsApp
+              </h2>
+              <p className="text-sm text-theme-text-muted">
+                Kirim pesan test untuk memastikan koneksi berfungsi
+              </p>
+            </div>
+          </div>
+
+          <WATestMessage />
+        </div>
+
+        {/* Section 3: Template Notifikasi */}
         <div className="rounded-2xl p-6 sm:p-8 theme-card">
           <div className="flex items-center gap-3 mb-6">
             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-blue-500/20">

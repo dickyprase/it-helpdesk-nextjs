@@ -4,6 +4,7 @@ import { useEffect, useState, useActionState } from 'react';
 import {
   connectWAAction,
   disconnectWAAction,
+  logoutWAAction,
   toggleWANotifications,
   type WAActionResult,
 } from '@/lib/actions/whatsapp';
@@ -13,16 +14,19 @@ import {
   Loader2,
   Power,
   PowerOff,
+  LogOut,
   Bell,
   BellOff,
   AlertCircle,
   CheckCircle2,
   QrCode,
+  HardDrive,
 } from 'lucide-react';
 
 interface WAConnectionProps {
   initialStatus: string;
   isEnabled: boolean;
+  hasSession?: boolean;
 }
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; bgColor: string; pulse: boolean }> = {
@@ -70,6 +74,10 @@ async function disconnectAction(): Promise<WAActionResult> {
   return disconnectWAAction();
 }
 
+async function logoutAction(): Promise<WAActionResult> {
+  return logoutWAAction();
+}
+
 async function toggleAction(): Promise<WAActionResult> {
   return toggleWANotifications();
 }
@@ -111,10 +119,12 @@ function FeedbackMessage({ state }: { state: WAActionResult | null }) {
   return null;
 }
 
-export default function WAConnection({ initialStatus, isEnabled }: WAConnectionProps) {
+export default function WAConnection({ initialStatus, isEnabled, hasSession: initialHasSession }: WAConnectionProps) {
   const [status, setStatus] = useState(initialStatus);
   const [qrCode, setQrCode] = useState<string | null>(null);
   const [notifEnabled, setNotifEnabled] = useState(isEnabled);
+  const [hasSession, setHasSession] = useState(initialHasSession ?? false);
+  const [message, setMessage] = useState<string | null>(null);
 
   const [connectState, connectFormAction, connectPending] = useActionState<WAActionResult | null, FormData>(
     async (_prev: WAActionResult | null) => {
@@ -127,6 +137,17 @@ export default function WAConnection({ initialStatus, isEnabled }: WAConnectionP
   const [disconnectState, disconnectFormAction, disconnectPending] = useActionState<WAActionResult | null, FormData>(
     async (_prev: WAActionResult | null) => {
       const result = await disconnectAction();
+      return result;
+    },
+    null
+  );
+
+  const [logoutState, logoutFormAction, logoutPending] = useActionState<WAActionResult | null, FormData>(
+    async (_prev: WAActionResult | null) => {
+      const result = await logoutAction();
+      if (result.success) {
+        setHasSession(false);
+      }
       return result;
     },
     null
@@ -156,8 +177,16 @@ export default function WAConnection({ initialStatus, isEnabled }: WAConnectionP
           if (parsed.data === 'connected' || parsed.data === 'disconnected') {
             setQrCode(null);
           }
+          // When connected, we know session exists
+          if (parsed.data === 'connected') {
+            setHasSession(true);
+          }
         } else if (parsed.type === 'qr') {
           setQrCode(parsed.data);
+        } else if (parsed.type === 'message') {
+          setMessage(parsed.data);
+          // Auto-clear message after 5 seconds
+          setTimeout(() => setMessage(null), 5000);
         }
       } catch {
         // ignore parse errors
@@ -174,6 +203,8 @@ export default function WAConnection({ initialStatus, isEnabled }: WAConnectionP
   }, []);
 
   const config = getStatusConfig(status);
+  const isDisconnected = status === 'disconnected';
+  const isConnected = status === 'connected';
 
   return (
     <div className="space-y-6">
@@ -195,7 +226,7 @@ export default function WAConnection({ initialStatus, isEnabled }: WAConnectionP
           )}
         </div>
         <div className="flex items-center gap-2">
-          {status === 'connected' ? (
+          {isConnected ? (
             <Wifi className="w-5 h-5" style={{ color: config.color }} />
           ) : (
             <WifiOff className="w-5 h-5" style={{ color: config.color }} />
@@ -205,6 +236,38 @@ export default function WAConnection({ initialStatus, isEnabled }: WAConnectionP
           </span>
         </div>
       </div>
+
+      {/* Session Indicator */}
+      {isDisconnected && hasSession && (
+        <div
+          className="flex items-center gap-2 px-4 py-3 rounded-xl"
+          style={{
+            backgroundColor: 'rgba(59, 130, 246, 0.08)',
+            border: '1px solid rgba(59, 130, 246, 0.2)',
+          }}
+        >
+          <HardDrive className="w-4 h-4 shrink-0" style={{ color: 'rgb(96, 165, 250)' }} />
+          <p className="text-sm" style={{ color: 'rgb(96, 165, 250)' }}>
+            Sesi tersimpan. Klik &quot;Hubungkan&quot; untuk terhubung kembali tanpa scan QR.
+          </p>
+        </div>
+      )}
+
+      {/* System Message */}
+      {message && (
+        <div
+          className="flex items-center gap-2 px-4 py-3 rounded-xl"
+          style={{
+            backgroundColor: 'rgba(107, 114, 128, 0.1)',
+            border: '1px solid rgba(107, 114, 128, 0.2)',
+          }}
+        >
+          <AlertCircle className="w-4 h-4 shrink-0" style={{ color: 'var(--theme-text-secondary)' }} />
+          <p className="text-sm" style={{ color: 'var(--theme-text-secondary)' }}>
+            {message}
+          </p>
+        </div>
+      )}
 
       {/* QR Code Display */}
       {status === 'qr_ready' && qrCode && (
@@ -239,7 +302,7 @@ export default function WAConnection({ initialStatus, isEnabled }: WAConnectionP
       {/* Action Buttons */}
       <div className="flex flex-wrap gap-3">
         {/* Connect Button */}
-        {status !== 'connected' && (
+        {!isConnected && (
           <form action={connectFormAction}>
             <button
               type="submit"
@@ -260,16 +323,16 @@ export default function WAConnection({ initialStatus, isEnabled }: WAConnectionP
           </form>
         )}
 
-        {/* Disconnect Button */}
-        {status === 'connected' && (
+        {/* Disconnect Button (keeps session) */}
+        {isConnected && (
           <form action={disconnectFormAction}>
             <button
               type="submit"
               disabled={disconnectPending}
               className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold text-white transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
               style={{
-                background: 'linear-gradient(to right, rgb(239, 68, 68), rgb(220, 38, 38))',
-                boxShadow: '0 4px 14px rgba(239, 68, 68, 0.25)',
+                background: 'linear-gradient(to right, rgb(234, 179, 8), rgb(202, 138, 4))',
+                boxShadow: '0 4px 14px rgba(234, 179, 8, 0.25)',
               }}
             >
               {disconnectPending ? (
@@ -282,6 +345,28 @@ export default function WAConnection({ initialStatus, isEnabled }: WAConnectionP
           </form>
         )}
 
+        {/* Logout Button (clears session) */}
+        {(isConnected || (isDisconnected && hasSession)) && (
+          <form action={logoutFormAction}>
+            <button
+              type="submit"
+              disabled={logoutPending}
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold text-white transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
+              style={{
+                background: 'linear-gradient(to right, rgb(239, 68, 68), rgb(220, 38, 38))',
+                boxShadow: '0 4px 14px rgba(239, 68, 68, 0.25)',
+              }}
+            >
+              {logoutPending ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <LogOut className="w-4 h-4" />
+              )}
+              Logout WA
+            </button>
+          </form>
+        )}
+
         {/* Toggle Notifications */}
         <form action={toggleFormAction}>
           <button
@@ -290,10 +375,10 @@ export default function WAConnection({ initialStatus, isEnabled }: WAConnectionP
             className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold text-white transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
             style={{
               background: notifEnabled
-                ? 'linear-gradient(to right, rgb(234, 179, 8), rgb(202, 138, 4))'
+                ? 'linear-gradient(to right, rgb(34, 197, 94), rgb(16, 185, 129))'
                 : 'linear-gradient(to right, rgb(107, 114, 128), rgb(75, 85, 99))',
               boxShadow: notifEnabled
-                ? '0 4px 14px rgba(234, 179, 8, 0.25)'
+                ? '0 4px 14px rgba(34, 197, 94, 0.25)'
                 : '0 4px 14px rgba(107, 114, 128, 0.25)',
             }}
           >
@@ -309,9 +394,16 @@ export default function WAConnection({ initialStatus, isEnabled }: WAConnectionP
         </form>
       </div>
 
+      {/* Disconnect vs Logout explanation */}
+      <div className="text-xs space-y-1" style={{ color: 'var(--theme-text-muted)' }}>
+        <p><strong>Putuskan</strong>: Memutus koneksi tapi sesi tetap tersimpan. Bisa terhubung kembali tanpa scan QR.</p>
+        <p><strong>Logout WA</strong>: Menghapus sesi sepenuhnya. Perlu scan QR baru untuk terhubung kembali.</p>
+      </div>
+
       {/* Action Feedback */}
       <FeedbackMessage state={connectState} />
       <FeedbackMessage state={disconnectState} />
+      <FeedbackMessage state={logoutState} />
       <FeedbackMessage state={toggleState} />
     </div>
   );

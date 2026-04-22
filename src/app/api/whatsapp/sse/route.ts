@@ -1,13 +1,19 @@
-import { NextRequest } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
+import { getSessionFromRequest } from '@/lib/auth';
 import { waService } from '@/lib/whatsapp-singleton';
 
 export const dynamic = 'force-dynamic';
 
-export async function GET(_request: NextRequest) {
+export async function GET(request: NextRequest) {
+  // Auth: only MANAGER can access WA SSE
+  const session = await getSessionFromRequest(request);
+  if (!session || session.role !== 'MANAGER') {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
   const encoder = new TextEncoder();
   const stream = new ReadableStream({
     start(controller) {
-      // Send current status immediately
       const status = waService.getStatus();
       controller.enqueue(
         encoder.encode(
@@ -15,7 +21,6 @@ export async function GET(_request: NextRequest) {
         )
       );
 
-      // Send current QR if available
       const qr = waService.getQrCode();
       if (qr) {
         controller.enqueue(
@@ -25,7 +30,6 @@ export async function GET(_request: NextRequest) {
         );
       }
 
-      // Subscribe to events
       const unsubscribe = waService.subscribe((event) => {
         try {
           controller.enqueue(
@@ -36,7 +40,6 @@ export async function GET(_request: NextRequest) {
         }
       });
 
-      // Keepalive
       const keepalive = setInterval(() => {
         try {
           controller.enqueue(encoder.encode(': keepalive\n\n'));
@@ -45,7 +48,7 @@ export async function GET(_request: NextRequest) {
         }
       }, 30000);
 
-      _request.signal.addEventListener('abort', () => {
+      request.signal.addEventListener('abort', () => {
         unsubscribe();
         clearInterval(keepalive);
         try {

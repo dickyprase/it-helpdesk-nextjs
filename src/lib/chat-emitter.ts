@@ -40,16 +40,17 @@ class ChatEmitter {
     const set = this.listeners.get(ticketId);
     if (set) {
       for (const listener of set) {
-        listener(msg);
+        try {
+          listener(msg);
+        } catch {
+          // ignore individual listener errors
+        }
       }
     }
   }
 }
 
-// Singleton
+// Singleton -- persist in both dev AND production
 const globalForChat = globalThis as unknown as { chatEmitter: ChatEmitter };
-export const chatEmitter =
-  globalForChat.chatEmitter || new ChatEmitter();
-if (process.env.NODE_ENV !== 'production') {
-  globalForChat.chatEmitter = chatEmitter;
-}
+export const chatEmitter = globalForChat.chatEmitter || new ChatEmitter();
+globalForChat.chatEmitter = chatEmitter;
