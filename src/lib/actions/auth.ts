@@ -52,6 +52,10 @@ export async function loginAction(
     return { success: false, error: 'Email atau password salah' };
   }
 
+  if (!user.is_active) {
+    return { success: false, error: 'Akun Anda telah dinonaktifkan. Hubungi administrator.' };
+  }
+
   const valid = await verifyPassword(parsed.data.password, user.password_hash);
   if (!valid) {
     return { success: false, error: 'Email atau password salah' };

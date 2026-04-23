@@ -200,6 +200,74 @@ export async function claimTicketAction(
   return { success: true };
 }
 
+// ===== UNCLAIM TICKET (STAFF releases claimed ticket back to OPEN) =====
+export async function unclaimTicketAction(
+  _prevState: TicketActionResult | null,
+  formData: FormData
+): Promise<TicketActionResult> {
+  const session = await getSession();
+  if (!session) {
+    return { success: false, error: 'Anda harus login terlebih dahulu' };
+  }
+  if (session.role !== 'STAFF') {
+    return { success: false, error: 'Hanya staff yang dapat melepas tiket' };
+  }
+
+  const ticketId = formData.get('ticket_id') as string;
+  const unclaimReason = (formData.get('unclaim_reason') as string)?.trim();
+
+  if (!ticketId) {
+    return { success: false, error: 'ID tiket tidak valid' };
+  }
+  if (!unclaimReason || unclaimReason.length < 5) {
+    return { success: false, error: 'Alasan melepas tiket minimal 5 karakter', fieldErrors: { unclaim_reason: ['Alasan minimal 5 karakter'] } };
+  }
+
+  try {
+    await prisma.$transaction(async (tx) => {
+      const tickets = await tx.$queryRaw<
+        Array<{ id: string; status: string; staff_id: string | null }>
+      >`
+        SELECT id, status, staff_id FROM "Ticket"
+        WHERE id = ${ticketId}
+        FOR UPDATE
+      `;
+
+      if (tickets.length === 0) {
+        throw new Error('Tiket tidak ditemukan');
+      }
+
+      const ticket = tickets[0];
+
+      if (ticket.staff_id !== session.id) {
+        throw new Error('Anda bukan staff yang ditugaskan untuk tiket ini');
+      }
+
+      if (ticket.status !== 'IN_PROGRESS') {
+        throw new Error('Hanya tiket dengan status Diproses yang dapat dilepas');
+      }
+
+      await tx.ticket.update({
+        where: { id: ticketId },
+        data: {
+          staff_id: null,
+          status: 'OPEN',
+        },
+      });
+    });
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : 'Gagal melepas tiket';
+    return { success: false, error: message };
+  }
+
+  sendTicketNotification(TICKET_EVENTS.TICKET_UNCLAIMED, ticketId).catch((err) => console.error('[WA Notification] Unhandled:', err));
+
+  revalidatePath('/dashboard/tickets');
+  revalidatePath(`/dashboard/tickets/${ticketId}`);
+  return { success: true };
+}
+
 // ===== UPDATE STATUS (MANAGER only for general transitions) =====
 export async function updateTicketStatusAction(
   _prevState: TicketActionResult | null,

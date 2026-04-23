@@ -27,6 +27,7 @@ model User {
   phone         String?  // WhatsApp number, e.g. "08123456789" or "628123456789"
   password_hash String
   role          Role     @default(USER)
+  is_active     Boolean  @default(true)
   created_at    DateTime @default(now())
   updated_at    DateTime @updatedAt
 

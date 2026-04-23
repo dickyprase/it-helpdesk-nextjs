@@ -157,3 +157,72 @@ export const changePasswordSchema = z.object({
 
 export type UpdateProfileInput = z.infer<typeof updateProfileSchema>;
 export type ChangePasswordInput = z.infer<typeof changePasswordSchema>;
+
+// Admin User Management Validations
+export const adminCreateUserSchema = z.object({
+  name: z
+    .string()
+    .trim()
+    .min(2, 'Nama minimal 2 karakter')
+    .max(100, 'Nama maksimal 100 karakter'),
+  email: z
+    .string()
+    .trim()
+    .min(1, 'Email wajib diisi')
+    .email('Format email tidak valid')
+    .transform((v) => v.toLowerCase()),
+  phone: z
+    .string()
+    .max(20, 'Nomor HP maksimal 20 karakter')
+    .optional()
+    .transform((val) => (val && val.trim().length > 0 ? val.trim() : undefined)),
+  password: z
+    .string()
+    .min(6, 'Password minimal 6 karakter')
+    .max(100, 'Password maksimal 100 karakter'),
+  confirmPassword: z
+    .string()
+    .min(1, 'Konfirmasi password wajib diisi'),
+  role: z.enum(['USER', 'STAFF'], {
+    error: 'Role harus USER atau STAFF',
+  }),
+}).refine((data) => data.password === data.confirmPassword, {
+  message: 'Password tidak cocok',
+  path: ['confirmPassword'],
+});
+
+export const adminUpdateUserSchema = z.object({
+  id: z.string().min(1, 'ID user wajib diisi'),
+  name: z
+    .string()
+    .trim()
+    .min(2, 'Nama minimal 2 karakter')
+    .max(100, 'Nama maksimal 100 karakter'),
+  email: z
+    .string()
+    .trim()
+    .min(1, 'Email wajib diisi')
+    .email('Format email tidak valid')
+    .transform((v) => v.toLowerCase()),
+  phone: z
+    .string()
+    .max(20, 'Nomor HP maksimal 20 karakter')
+    .optional()
+    .transform((val) => (val && val.trim().length > 0 ? val.trim() : undefined)),
+  role: z.enum(['USER', 'STAFF', 'MANAGER'], {
+    error: 'Role tidak valid',
+  }),
+});
+
+// Unclaim Ticket Validation
+export const unclaimTicketSchema = z.object({
+  ticket_id: z.string().min(1, 'ID tiket wajib diisi'),
+  unclaim_reason: z
+    .string()
+    .min(5, 'Alasan minimal 5 karakter')
+    .max(2000, 'Alasan maksimal 2000 karakter'),
+});
+
+export type AdminCreateUserInput = z.infer<typeof adminCreateUserSchema>;
+export type AdminUpdateUserInput = z.infer<typeof adminUpdateUserSchema>;
+export type UnclaimTicketInput = z.infer<typeof unclaimTicketSchema>;

@@ -9,6 +9,7 @@ import {
   pendingTicketAction,
   setDifficultyAction,
   claimTicketAction,
+  unclaimTicketAction,
   type TicketActionResult,
 } from '@/lib/actions/tickets';
 import type { SessionUser } from '@/lib/auth';
@@ -23,6 +24,8 @@ import {
   Clock,
   Paperclip,
   Gauge,
+  Undo2,
+  X,
 } from 'lucide-react';
 
 // Manager transitions
@@ -378,6 +381,126 @@ function ClaimTicketForm({ ticketId }: { ticketId: string }) {
   );
 }
 
+// --- Unclaim Ticket (Staff releases claimed ticket with modal) ---
+function UnclaimTicketForm({ ticketId }: { ticketId: string }) {
+  const [showModal, setShowModal] = useState(false);
+  const [state, formAction, pending] = useActionState(
+    async (_prev: TicketActionResult | null, formData: FormData) => {
+      const result = await unclaimTicketAction(null, formData);
+      if (result.success) {
+        setShowModal(false);
+      }
+      return result;
+    },
+    null
+  );
+
+  return (
+    <div>
+      {/* Trigger Button */}
+      <button
+        type="button"
+        onClick={() => setShowModal(true)}
+        className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold text-white bg-gradient-to-r from-red-500 to-rose-600 shadow-lg shadow-red-500/20 hover:from-red-400 hover:to-rose-500 transition-all duration-200"
+      >
+        <Undo2 className="w-4 h-4" />
+        Lepas Tiket
+      </button>
+
+      {/* Modal Overlay */}
+      {showModal && (
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center p-4"
+          onClick={(e) => { if (e.target === e.currentTarget) setShowModal(false); }}
+        >
+          {/* Backdrop */}
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+
+          {/* Modal Content */}
+          <div
+            className="relative w-full max-w-md rounded-2xl p-6 shadow-2xl animate-in fade-in zoom-in-95 duration-200"
+            style={{
+              background: 'var(--theme-bg-gradient-from)',
+              border: '1px solid var(--theme-card-border)',
+            }}
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-red-500 to-rose-600 flex items-center justify-center">
+                  <Undo2 className="w-4 h-4 text-white" />
+                </div>
+                <h3 className="text-lg font-semibold text-theme-text-primary">
+                  Lepas Tiket
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowModal(false)}
+                className="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-white/10 transition-colors text-theme-text-muted"
+                aria-label="Tutup"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Warning */}
+            <div className="px-4 py-3 rounded-xl bg-amber-500/10 border border-amber-500/20 mb-4">
+              <p className="text-sm text-amber-400">
+                Tiket akan kembali ke status <strong>Terbuka</strong> dan bisa diklaim oleh staff lain.
+              </p>
+            </div>
+
+            <FeedbackMessage state={state} />
+
+            {/* Form */}
+            <form action={formAction} className="space-y-4">
+              <input type="hidden" name="ticket_id" value={ticketId} />
+
+              <div>
+                <label htmlFor="unclaim-reason" className="block text-sm font-medium text-theme-text-secondary mb-1.5">
+                  Alasan Melepas Tiket <span className="text-red-400">*</span>
+                </label>
+                <textarea
+                  id="unclaim-reason"
+                  name="unclaim_reason"
+                  required
+                  rows={3}
+                  minLength={5}
+                  placeholder="Jelaskan alasan Anda melepas tiket ini..."
+                  className="w-full px-4 py-2.5 rounded-xl theme-input text-sm resize-none"
+                />
+                {state?.fieldErrors?.unclaim_reason && (
+                  <p className="mt-1 text-xs text-red-400">{state.fieldErrors.unclaim_reason[0]}</p>
+                )}
+              </div>
+
+              <div className="flex items-center gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowModal(false)}
+                  className="flex-1 px-4 py-2.5 rounded-xl text-sm font-semibold text-theme-text-secondary hover:bg-white/5 transition-colors"
+                  style={{ border: '1px solid var(--theme-card-border)' }}
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  disabled={pending}
+                  className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold text-white bg-gradient-to-r from-red-500 to-rose-600 hover:from-red-400 hover:to-rose-500 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {pending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Undo2 className="w-4 h-4" />}
+                  {pending ? 'Melepas...' : 'Konfirmasi Lepas'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // --- Assign Staff (Manager only) ---
 function AssignStaffForm({
   ticketId,
@@ -536,11 +659,12 @@ export default function TicketActions({
             currentLevel={ticket.difficulty_level}
           />
 
-          {/* IN_PROGRESS: can Pending or Resolve */}
+          {/* IN_PROGRESS: can Pending, Resolve, or Unclaim */}
           {ticket.status === 'IN_PROGRESS' && (
             <>
               <PendingTicketForm ticketId={ticket.id} />
               <ResolveTicketForm ticketId={ticket.id} />
+              <UnclaimTicketForm ticketId={ticket.id} />
             </>
           )}
 

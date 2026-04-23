@@ -8,6 +8,7 @@ import {
   Trophy,
   Settings,
   UserCog,
+  Users,
 } from 'lucide-react';
 import { logoutAction } from '@/lib/actions/auth';
 import ThemeToggle from '@/components/ui/theme-toggle';
@@ -138,6 +139,27 @@ export default async function DashboardPage() {
               </p>
             </div>
           </Link>
+
+          {/* Manager-only: Kelola User */}
+          {user.role === 'MANAGER' && (
+            <Link
+              href="/dashboard/admin/users"
+              className="group relative overflow-hidden rounded-2xl p-6 transition-all duration-300 hover:scale-[1.02] block theme-card"
+            >
+              <div className="absolute inset-0 bg-gradient-to-br from-teal-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+              <div className="relative z-10">
+                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-teal-500 to-cyan-600 flex items-center justify-center shadow-lg shadow-teal-500/20 mb-4">
+                  <Users className="w-6 h-6 text-white" />
+                </div>
+                <h3 className="text-lg font-semibold text-theme-text-primary mb-1">
+                  Kelola User
+                </h3>
+                <p className="text-sm text-theme-text-muted">
+                  Tambah, edit, dan kelola akun pengguna
+                </p>
+              </div>
+            </Link>
+          )}
 
           {/* Manager-only: WA Gateway */}
           {user.role === 'MANAGER' && (

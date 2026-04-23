@@ -85,6 +85,12 @@ async function main() {
         'Halo [nama-user], tiketmu *[id-ticket]* _[judul-ticket]_ telah ditutup secara resmi.\n\nKategori: *[kategori]*\nStatus Akhir: *[status-akhir]*\n\nTerima kasih telah menggunakan layanan IT Helpdesk. Semoga masalahmu sudah teratasi!',
       variables: '[id-ticket],[judul-ticket],[nama-user],[kategori],[status-akhir]',
     },
+    {
+      event_type: 'ticket_unclaimed',
+      template_body:
+        'Halo [nama-user], tiketmu *[id-ticket]* _[judul-ticket]_ telah dilepas oleh staff dan kembali ke status *Terbuka*.\n\nKategori: *[kategori]*\n\nTiket akan segera ditangani oleh staff lain. Mohon ditunggu.',
+      variables: '[id-ticket],[judul-ticket],[nama-user],[kategori]',
+    },
   ]
 
   for (const tpl of templates) {

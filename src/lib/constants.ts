@@ -6,4 +6,5 @@ export const TICKET_EVENTS = {
   TICKET_PENDING: 'ticket_pending',
   TICKET_RESOLVED: 'ticket_resolved',
   TICKET_CLOSED: 'ticket_closed',
+  TICKET_UNCLAIMED: 'ticket_unclaimed',
 } as const;
