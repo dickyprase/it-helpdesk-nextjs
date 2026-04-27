@@ -13,6 +13,7 @@ const PAGES = [
   { slug: 'flow',      file: '02-flow.md',      title: 'Alur Aplikasi',  icon: '🔄' },
   { slug: 'database',  file: '03-database.md',  title: 'Database & ERD', icon: '🗄️' },
   { slug: 'endpoints', file: '04-endpoints.md', title: 'API Endpoints',  icon: '⚡' },
+  { slug: 'php-guide', file: '05-php-guide.md', title: 'Integrasi PHP',  icon: '🐘' },
 ];
 
 function renderPage(activePage) {
