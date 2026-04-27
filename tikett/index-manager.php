@@ -1,4 +1,10 @@
 <?php
+require_once 'function.php';
+require_role('MANAGER');
+
+$lb_result = get_leaderboard('monthly');
+$leaderboard = (!$lb_result['error'] && isset($lb_result['data'])) ? $lb_result['data'] : [];
+
 include "header.php";
 ?>
 <div id="layoutSidenav_content">
@@ -11,51 +17,34 @@ include "header.php";
                     Peringkat
                 </div>
                 <div class="card-body">
+                    <?php if (empty($leaderboard)): ?>
+                    <p class="text-muted text-center">Belum ada data ranking bulan ini.</p>
+                    <?php else: ?>
                     <table id="datatablesSimple">
                         <thead>
                             <tr>
                                 <th>No</th>
                                 <th>Nama</th>
-                                <th>Posisi</th>
-                                <th>Status</th>
+                                <th>Email</th>
                                 <th>Poin</th>
+                                <th>Tiket Selesai</th>
                             </tr>
                         </thead>
                         <tbody>
+                            <?php $no = 1; foreach ($leaderboard as $lb): ?>
                             <tr>
-                                <td>1</td>
-                                <td>Rahmat</td>
-                                <td>Support Programmer IT</td>
-                                <td>
-                                    <span class="badge-status active">Aktif</span>
-                                </td>
-                                <td>105</td>
+                                <td><?= $no++ ?></td>
+                                <td><?= htmlspecialchars($lb['staff_name'] ?? '-') ?></td>
+                                <td><?= htmlspecialchars($lb['staff_email'] ?? '-') ?></td>
+                                <td><strong><?= $lb['total_points'] ?? 0 ?></strong></td>
+                                <td><?= $lb['tickets_closed'] ?? 0 ?></td>
                             </tr>
-                            <tr>
-                                <td>2</td>
-                                <td>Eko Septian</td>
-                                <td>Support IT</td>
-                                <td>
-                                    <span class="badge-status active">Aktif</span>
-                                </td>
-                                <td>90</td>
-                            </tr>
-                            <tr>
-                                <td>3</td>
-                                <td>Cahyo</td>
-                                <td>Support IT</td>
-                                <td>
-                                    <span class="badge-status non-active">Tidak Aktif</span>
-                                </td>
-                                <td>55</td>
-                            </tr>
+                            <?php endforeach; ?>
                         </tbody>
                     </table>
+                    <?php endif; ?>
                 </div>
             </div>
         </div>
     </main>
-
-    <?php
-    include "footer.php";
-    ?>
+    <?php include "footer.php"; ?>

@@ -6,7 +6,7 @@
 
 // ===== KONFIGURASI =====
 // Ganti URL ini sesuai alamat server REST API Anda
-$API_BASE_URL = "http://localhost:3001/api/v1";
+$API_BASE_URL = "https://api.zorroserver.net/api/v1";
 
 session_start();
 

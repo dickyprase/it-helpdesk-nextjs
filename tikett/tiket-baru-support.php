@@ -1,70 +1,82 @@
 <?php
+require_once 'function.php';
+require_role('STAFF', 'MANAGER');
+
+// Handle claim ticket
+$success = '';
+$claim_error = '';
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['claim_ticket_id'])) {
+    $result = claim_ticket($_POST['claim_ticket_id']);
+    if (!$result['error']) {
+        $success = 'Tiket berhasil diambil!';
+    } else {
+        $claim_error = $result['message'] ?? 'Gagal mengambil tiket';
+    }
+}
+
+// Get OPEN tickets (unclaimed)
+$result = get_tickets(['status' => 'OPEN']);
+$tickets = (!$result['error'] && isset($result['data'])) ? $result['data'] : [];
+
 include "header.php";
 ?>
 <div id="layoutSidenav_content">
     <main>
         <div class="container-fluid px-4">
 
+            <?php if ($success): ?>
+            <div class="alert alert-success mt-3"><?= htmlspecialchars($success) ?></div>
+            <?php endif; ?>
+            <?php if ($claim_error): ?>
+            <div class="alert alert-danger mt-3"><?= htmlspecialchars($claim_error) ?></div>
+            <?php endif; ?>
+
             <div class="card mb-4 shadow p-3 mb-5 bg-body rounded">
                 <div class="card-header">
-                    <i class="fas fa-trophy me-1"></i>
-                    Tiket Baru
+                    <i class="fas fa-ticket me-1"></i>
+                    Tiket Baru (<?= count($tickets) ?>)
                 </div>
                 <div class="card-body">
+                    <?php if (empty($tickets)): ?>
+                    <div class="text-center text-muted py-4">
+                        <i class="fas fa-inbox fa-3x mb-3"></i>
+                        <p>Tidak ada tiket baru saat ini.</p>
+                    </div>
+                    <?php else: ?>
                     <table id="datatablesSimpleTicket">
                         <thead>
                             <tr>
                                 <th>No</th>
                                 <th>No Tiket</th>
                                 <th>Nama</th>
-                                <th>Divisi</th>
                                 <th>Tanggal</th>
                                 <th>Deskripsi Kendala</th>
-                                <th>Bukti Kendala</th>
+                                <th>Kategori</th>
                                 <th>Aksi</th>
                             </tr>
                         </thead>
                         <tbody>
+                            <?php $no = 1; foreach ($tickets as $t): ?>
                             <tr>
-                                <td>1</td>
-                                <td>#tkt00001</td>
-                                <td>Rahmat</td>
-                                <td>Administrasi</td>
-                                <td>24/04/2026</td>
-                                <td>Lorem ipsum dolor sit amet consectetur, adipisicing elit. Eveniet autem provident similique consequuntur explicabo facere et ipsa quidem, quae repellat neque expedita! Alias necessitatibus possimus aliquid vitae deserunt amet, quasi totam! Numquam similique qui tempore aspernatur dolore, accusantium exercitationem inventore nihil fuga nulla, reiciendis tempora reprehenderit velit vero nisi suscipit.</td>
+                                <td><?= $no++ ?></td>
+                                <td><?= htmlspecialchars($t['code'] ?? '-') ?></td>
+                                <td><?= htmlspecialchars($t['user']['name'] ?? '-') ?></td>
+                                <td><?= format_tanggal($t['created_at'] ?? '') ?></td>
+                                <td><?= htmlspecialchars(potong_teks($t['description'] ?? '', 80)) ?></td>
+                                <td><?= htmlspecialchars($t['category']['name'] ?? '-') ?></td>
                                 <td>
-                                    <a href="#" class="btn btn-warning" target="_blank"><i class="fas fa-file-image"></i></a>
-                                </td>
-                                <td>
-                                    <a href="#" id="btnAmbil" class="btn btn-success" style="font-size: 15px;">Ambil Tiket</a>
+                                    <form method="POST" style="display:inline" onsubmit="return confirm('Ambil tiket ini?')">
+                                        <input type="hidden" name="claim_ticket_id" value="<?= htmlspecialchars($t['id']) ?>">
+                                        <button type="submit" class="btn btn-success btn-sm">Ambil Tiket</button>
+                                    </form>
                                 </td>
                             </tr>
+                            <?php endforeach; ?>
                         </tbody>
                     </table>
+                    <?php endif; ?>
                 </div>
             </div>
         </div>
     </main>
-
-    <?php
-    include "footer.php";
-    ?>
-
-    <script>
-        document.getElementById('btnAmbil').addEventListener('click', function(e) {
-            e.preventDefault();
-
-            Swal.fire({
-                title: 'Ambil tiket?',
-                // text: 'Pastikan data sudah benar',
-                icon: 'question',
-                showCancelButton: true,
-                confirmButtonText: 'Ya, ambil!',
-                cancelButtonText: 'Batal'
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    window.location.href = 'tiket-antri-support.php';
-                }
-            });
-        });
-    </script>
+    <?php include "footer.php"; ?>

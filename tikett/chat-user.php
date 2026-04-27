@@ -1,131 +1,126 @@
 <?php
+require_once 'function.php';
+require_role('USER');
+
+$ticket_id = $_GET['id'] ?? '';
+if (!$ticket_id) { header('Location: tiket-antri-user.php'); exit; }
+
+// Handle send message
+$msg_error = '';
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['send_message'])) {
+    $message = trim($_POST['message'] ?? '');
+    if ($message) {
+        $result = send_chat_message($ticket_id, $message);
+        if ($result['error']) $msg_error = $result['message'] ?? 'Gagal mengirim pesan';
+    }
+}
+
+// Fetch ticket + messages
+$ticket_result = get_ticket($ticket_id);
+$ticket = (!$ticket_result['error'] && isset($ticket_result['data'])) ? $ticket_result['data'] : null;
+if (!$ticket) { header('Location: tiket-antri-user.php'); exit; }
+
+$chat_result = get_chat_messages($ticket_id);
+$messages = (!$chat_result['error'] && isset($chat_result['data'])) ? $chat_result['data'] : [];
+
+$current_user = get_current_user_data();
+
 include "header.php";
 ?>
 <div id="layoutSidenav_content">
-  <main>
+    <main>
+        <div class="container-fluid px-4">
 
-    <div class="container-fluid px-4">
+            <?php if ($msg_error): ?>
+            <div class="alert alert-danger mt-3"><?= htmlspecialchars($msg_error) ?></div>
+            <?php endif; ?>
 
-      <div class="container-fluid">
-
-        <div class="card mb-4 shadow p-3 mb-5 bg-body rounded">
-          <div class="card-header text-center">
-            <i class="fas fa-tools me-1"></i>
-            Permasalahan
-          </div>
-          <div class="card-body">
-            <div class="table-responsive">
-
-              <table class="table table-bordered border-primary table-overflow" id="table-respon">
-                <thead>
-                  <tr class="text-center align-middle">
-                    <th>No</th>
-                    <th>No Tiket</th>
-                    <th>Nama Support</th>
-                    <th>Divisi</th>
-                    <th>Tanggal</th>
-                    <th>Deskripsi Kendala</th>
-                    <th>Bukti Kendala</th>
-                    <th>Aksi</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr class="text-center align-middle">
-                    <td>1</td>
-                    <td>#tkt00001</td>
-                    <td class="text-start">Rahmat</td>
-                    <td>Administrasi</td>
-                    <td>24/04/2026</td>
-                    <td class="text-start">Lorem ipsum dolor sit amet consectetur, adipisicing elit. Eveniet autem provident similique consequuntur explicabo facere et ipsa quidem, quae repellat neque expedita! Alias necessitatibus possimus aliquid vitae deserunt amet, quasi totam! Numquam similique qui tempore aspernatur dolore, accusantium exercitationem inventore nihil fuga nulla, reiciendis tempora reprehenderit velit vero nisi suscipit.</td>
-                    <td>
-                      <a href="#" class="btn btn-warning" target="_blank"><i class="fas fa-file-image"></i></a>
-                    </td>
-                    <td>
-                      <a href="tiket-antri-user.php" class="btn btn-success" style="font-size: 15px;">Kembali</a>
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Chat -->
-      <div class="container-fluid pb-5">
-
-        <div class="row">
-
-          <div class="col">
-
-            <div class="card shadow p-3 mb-5 bg-body rounded">
-              <div class="card-body">
-
-                <div class="pt-3 pe-3 chat-box">
-
-                  <div class="d-flex flex-row justify-content-start">
-                    <div>
-                      <p class="small ms-3 mb-3 rounded-3 text-muted">#Nama User# | #No Tiket#</p>
-                      <p class="small p-2 ms-3 mb-1 rounded-3 bg-light">Lorem ipsum dolor sit amet consectetur adipisicing elit. Accusamus necessitatibus quaerat ipsa esse. Ipsa alias facere dicta a veniam molestiae architecto corporis consectetur, beatae nulla suscipit laboriosam explicabo. Repellendus voluptatem tempora quasi consectetur adipisci dolorem qui nisi voluptates eaque! Facilis quo incidunt voluptates quam consequuntur inventore facere distinctio possimus perferendis. Beatae culpa deserunt nemo cum dolore officiis sint illum unde. Ex dolores dolorum quisquam adipisci, consectetur id veniam vero aut explicabo. Ab aliquid quia ipsam necessitatibus amet, facilis tempora expedita facere, nulla animi placeat aliquam est nostrum sed excepturi asperiores repellendus sequi dolor harum quidem at! Tenetur fugit hic nesciunt?</p>
-                      <p class="small ms-3 mb-3 rounded-3 text-muted float-end">10:00 | 24 Apr 26</p>
+            <!-- Ticket Detail -->
+            <div class="container-fluid">
+                <div class="card mb-4 shadow p-3 mb-5 bg-body rounded">
+                    <div class="card-header text-center">
+                        <i class="fas fa-tools me-1"></i>
+                        Permasalahan
                     </div>
-                  </div>
-
-                  <div class="d-flex flex-row justify-content-end">
-                    <div>
-                      <p class="small me-3 mb-3 rounded-3 text-muted text-end">#Nama Support#</p>
-                      <p class="small p-2 me-3 mb-1 text-white rounded-3 bg-primary">Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.</p>
-                      <p class="small me-3 mb-3 rounded-3 text-muted">10:05 | 24 Apr 26</p>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-bordered border-primary table-overflow" id="table-respon">
+                                <thead>
+                                    <tr class="text-center align-middle">
+                                        <th>No Tiket</th>
+                                        <th>Nama Support</th>
+                                        <th>Kategori</th>
+                                        <th>Tanggal</th>
+                                        <th>Deskripsi Kendala</th>
+                                        <th>Status</th>
+                                        <th>Aksi</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr class="text-center align-middle">
+                                        <td><?= htmlspecialchars($ticket['code'] ?? '-') ?></td>
+                                        <td class="text-start"><?= htmlspecialchars($ticket['staff']['name'] ?? 'Belum ada') ?></td>
+                                        <td><?= htmlspecialchars($ticket['category']['name'] ?? '-') ?></td>
+                                        <td><?= format_tanggal($ticket['created_at'] ?? '') ?></td>
+                                        <td class="text-start"><?= htmlspecialchars($ticket['description'] ?? '-') ?></td>
+                                        <td>
+                                            <?php
+                                            $st = $ticket['status'] ?? '';
+                                            if ($st === 'OPEN') echo '<span class="badge bg-success">Terbuka</span>';
+                                            elseif ($st === 'IN_PROGRESS') echo '<span class="badge bg-primary">Diproses</span>';
+                                            elseif ($st === 'PENDING') echo '<span class="badge bg-warning">Tertunda</span>';
+                                            elseif ($st === 'RESOLVED') echo '<span class="badge bg-info">Selesai</span>';
+                                            else echo '<span class="badge bg-secondary">Ditutup</span>';
+                                            ?>
+                                        </td>
+                                        <td>
+                                            <a href="tiket-antri-user.php" class="btn btn-success" style="font-size: 15px;">Kembali</a>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
-                  </div>
-
                 </div>
-
-                <div class="text-muted d-flex justify-content-start align-items-center pe-3 pt-3 mt-2">
-                  <input type="text" class="form-control form-control-lg" id="exampleFormControlInput2"
-                    placeholder="Tulis Pesan">
-                  <a class="ms-1 text-muted" href="#!"><i class="fas fa-paperclip"></i></a>
-                  <a class="ms-3" href="#!"><i class="fas fa-paper-plane"></i></a>
-                </div>
-
-              </div>
             </div>
 
-          </div>
+            <!-- Chat Messages -->
+            <div class="container-fluid pb-5">
+                <div class="row">
+                    <div class="col">
+                        <div class="card shadow p-3 mb-5 bg-body rounded">
+                            <div class="card-body">
+                                <div class="pt-3 pe-3 chat-box" id="chatBox" style="max-height:400px; overflow-y:auto;">
+                                    <?php if (empty($messages)): ?>
+                                    <p class="text-muted text-center">Belum ada pesan.</p>
+                                    <?php else: ?>
+                                        <?php foreach ($messages as $msg): ?>
+                                            <?php $is_own = ($msg['sender_id'] ?? '') === ($current_user['id'] ?? ''); ?>
+                                            <div class="d-flex flex-row <?= $is_own ? 'justify-content-end' : 'justify-content-start' ?>">
+                                                <div>
+                                                    <p class="small <?= $is_own ? 'me-3 text-end' : 'ms-3' ?> mb-3 rounded-3 text-muted"><?= htmlspecialchars($msg['sender_name'] ?? '-') ?> (<?= htmlspecialchars($msg['sender_role'] ?? '-') ?>)</p>
+                                                    <p class="small p-2 <?= $is_own ? 'me-3 text-white rounded-3 bg-primary' : 'ms-3 rounded-3 bg-light' ?> mb-1"><?= htmlspecialchars($msg['message'] ?? '') ?></p>
+                                                    <p class="small <?= $is_own ? 'me-3' : 'ms-3 float-end' ?> mb-3 rounded-3 text-muted"><?= format_tanggal($msg['created_at'] ?? '') ?></p>
+                                                </div>
+                                            </div>
+                                        <?php endforeach; ?>
+                                    <?php endif; ?>
+                                </div>
+
+                                <?php if (($ticket['status'] ?? '') !== 'CLOSED' && ($ticket['status'] ?? '') !== 'RESOLVED'): ?>
+                                <div class="text-muted d-flex justify-content-start align-items-center pe-3 pt-3 mt-2">
+                                    <form method="POST" class="d-flex w-100 gap-2">
+                                        <input type="text" name="message" class="form-control form-control-lg" placeholder="Tulis Pesan" required autocomplete="off">
+                                        <button type="submit" name="send_message" value="1" class="btn btn-primary ms-3"><i class="fas fa-paper-plane"></i></button>
+                                    </form>
+                                </div>
+                                <?php endif; ?>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
         </div>
-
-      </div>
-
-    </div>
-  </main>
-
-  <?php
-  include "footer.php";
-  ?>
-
-  <script>
-    document.getElementById('btnSelesai').addEventListener('click', function(e) {
-      e.preventDefault();
-      Swal.fire({
-        title: 'Konfirmasi',
-        text: 'Apakah Permasalahan Sudah Terselesaikan?',
-        icon: 'question',
-        showCancelButton: true,
-        confirmButtonText: 'Ya, Sudah Terselesaikan',
-        cancelButtonText: 'Belum'
-      }).then((result) => {
-        if (result.isConfirmed) {
-          Swal.fire({
-            title: 'Berhasil!',
-            text: 'Permasalahan telah diselesaikan',
-            icon: 'success',
-            timer: 1500,
-            showConfirmButton: false
-          }).then(() => {
-            window.location.href = 'tiket-baru-support.php';
-          });
-        }
-      });
-    });
-  </script>
+    </main>
+    <?php include "footer.php"; ?>

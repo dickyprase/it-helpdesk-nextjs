@@ -38,6 +38,7 @@ include "header.php";
                                 <th>Status</th>
                                 <th>Staff</th>
                                 <th>Tanggal</th>
+                                <th>Aksi</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -59,6 +60,9 @@ include "header.php";
                                 </td>
                                 <td><?= htmlspecialchars($t['staff']['name'] ?? '-') ?></td>
                                 <td><?= format_tanggal($t['created_at'] ?? '') ?></td>
+                                <td>
+                                    <a href="chat-user.php?id=<?= htmlspecialchars($t['id']) ?>" class="btn btn-warning btn-sm">Riwayat Chat</a>
+                                </td>
                             </tr>
                             <?php endforeach; ?>
                         </tbody>
