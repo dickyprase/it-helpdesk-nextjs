@@ -236,16 +236,21 @@ Notification_Template (standalone, 1 row per event_type)
 
 ### Ticket State Machine
 ```
-OPEN ──────> IN_PROGRESS ──────> PENDING
-  |               |                  |
-  |               v                  v
-  |          RESOLVED ──────> IN_PROGRESS
-  |               |
-  v               v
-CLOSED <──── RESOLVED
+OPEN ──> IN_PROGRESS ──> PENDING
+  |           |              |
+  |           |              v
+  |           |         IN_PROGRESS (kembali)
+  |           v              |
+  |       RESOLVED <── IN_PROGRESS
+  |           |
+  v           v
+CLOSED <── RESOLVED
 ```
-- **STAFF**: IN_PROGRESS → PENDING, IN_PROGRESS/PENDING → RESOLVED
-- **MANAGER**: Semua transisi sesuai diagram di atas
+**Alur utama:** `OPEN → IN_PROGRESS → RESOLVED → CLOSED`
+**Dengan pending:** `OPEN → IN_PROGRESS → PENDING → IN_PROGRESS → RESOLVED → CLOSED`
+- **STAFF**: IN_PROGRESS → PENDING, IN_PROGRESS → RESOLVED (TIDAK bisa resolve dari PENDING)
+- **MANAGER**: Semua transisi sesuai diagram (termasuk PENDING → IN_PROGRESS)
+- **Difficulty**: Hanya MANAGER yang bisa set tingkat kesulitan
 
 ### Scoring
 ```

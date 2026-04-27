@@ -6,10 +6,11 @@ function generateCode() {
   return `TKT-${ts}-${rand}`;
 }
 
+// Flow: OPEN → IN_PROGRESS → PENDING (optional) → IN_PROGRESS → RESOLVED → CLOSED
 const MANAGER_TRANSITIONS = {
   OPEN: ['IN_PROGRESS', 'CLOSED'],
   IN_PROGRESS: ['PENDING', 'RESOLVED', 'OPEN'],
-  PENDING: ['IN_PROGRESS', 'RESOLVED'],
+  PENDING: ['IN_PROGRESS'],
   RESOLVED: ['CLOSED', 'IN_PROGRESS'],
   CLOSED: [],
 };
@@ -210,7 +211,7 @@ const TicketModel = {
     const { rows: current } = await pool.query(`SELECT * FROM "Ticket" WHERE id = $1`, [ticketId]);
     if (!current[0]) throw Object.assign(new Error('Tiket tidak ditemukan'), { statusCode: 404 });
     if (current[0].staff_id !== staffId) throw Object.assign(new Error('Anda bukan staff yang ditugaskan'), { statusCode: 403 });
-    if (!['IN_PROGRESS', 'PENDING'].includes(current[0].status)) throw Object.assign(new Error('Hanya tiket IN_PROGRESS/PENDING yang dapat diselesaikan'), { statusCode: 400 });
+    if (current[0].status !== 'IN_PROGRESS') throw Object.assign(new Error('Hanya tiket Diproses yang dapat diselesaikan. Jika tiket Tertunda, ubah ke Diproses terlebih dahulu.'), { statusCode: 400 });
 
     const { rows } = await pool.query(
       `UPDATE "Ticket" SET status = 'RESOLVED', resolution_note = $1, updated_at = NOW() WHERE id = $2 RETURNING *`,

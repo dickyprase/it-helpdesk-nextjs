@@ -29,10 +29,11 @@ import {
 } from 'lucide-react';
 
 // Manager transitions
+// Flow: OPEN → IN_PROGRESS → PENDING (optional) → IN_PROGRESS → RESOLVED → CLOSED
 const MANAGER_TRANSITIONS: Record<string, string[]> = {
   OPEN: ['IN_PROGRESS', 'CLOSED'],
   IN_PROGRESS: ['PENDING', 'RESOLVED', 'OPEN'],
-  PENDING: ['IN_PROGRESS', 'RESOLVED'],
+  PENDING: ['IN_PROGRESS'],
   RESOLVED: ['CLOSED', 'IN_PROGRESS'],
   CLOSED: [],
 };
@@ -653,12 +654,6 @@ export default function TicketActions({
       {/* STAFF (assigned): actions based on current status */}
       {isStaff && isAssignedStaff && (
         <>
-          {/* Set difficulty */}
-          <SetDifficultyForm
-            ticketId={ticket.id}
-            currentLevel={ticket.difficulty_level}
-          />
-
           {/* IN_PROGRESS: can Pending, Resolve, or Unclaim */}
           {ticket.status === 'IN_PROGRESS' && (
             <>
@@ -668,9 +663,11 @@ export default function TicketActions({
             </>
           )}
 
-          {/* PENDING: can Resolve (after vendor/sparepart ready) */}
+          {/* PENDING: must go back to IN_PROGRESS first before resolve */}
           {ticket.status === 'PENDING' && (
-            <ResolveTicketForm ticketId={ticket.id} />
+            <p className="text-sm text-theme-text-muted">
+              Tiket sedang tertunda. Hubungi Manager untuk mengubah status kembali ke <strong className="text-theme-text-primary">Diproses</strong> sebelum bisa diselesaikan.
+            </p>
           )}
 
           {/* RESOLVED: waiting for manager to close */}

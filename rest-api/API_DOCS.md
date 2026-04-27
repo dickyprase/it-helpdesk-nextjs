@@ -62,17 +62,24 @@ Semua response menggunakan format JSON yang konsisten:
 #### Ticket Status Flow (Alur Transisi)
 
 ```
-OPEN ──────────> IN_PROGRESS ──────> PENDING
-  │                   │                  │
-  │                   ▼                  ▼
-  │              RESOLVED ────────> IN_PROGRESS
-  │                   │
-  ▼                   ▼
-CLOSED <──────── RESOLVED
+OPEN ──> IN_PROGRESS ──> PENDING
+  │           │              │
+  │           │              ▼
+  │           │         IN_PROGRESS (kembali)
+  │           │              │
+  │           ▼              ▼
+  │       RESOLVED ◄── IN_PROGRESS
+  │           │
+  ▼           ▼
+CLOSED <── RESOLVED
 ```
 
-- **Staff** bisa: `IN_PROGRESS → PENDING`, `IN_PROGRESS/PENDING → RESOLVED`
-- **Manager** bisa: semua transisi sesuai diagram di atas
+**Alur utama:** `OPEN → IN_PROGRESS → RESOLVED → CLOSED`  
+**Dengan pending:** `OPEN → IN_PROGRESS → PENDING → IN_PROGRESS → RESOLVED → CLOSED`
+
+- **Staff** bisa: `IN_PROGRESS → PENDING`, `IN_PROGRESS → RESOLVED`
+- **Staff TIDAK bisa** resolve langsung dari PENDING (harus kembali ke IN_PROGRESS dulu)
+- **Manager** bisa: semua transisi sesuai diagram di atas (termasuk PENDING → IN_PROGRESS)
 
 #### Difficulty Level (Tingkat Kesulitan)
 
@@ -578,6 +585,8 @@ Content-Type: application/json
 
 Staff mengubah tiket ke status `PENDING` (menunggu vendor/pihak ketiga). Hanya bisa dari status `IN_PROGRESS`.
 
+> **Penting:** Setelah tiket di-pending, tiket harus dikembalikan ke `IN_PROGRESS` oleh Manager sebelum bisa di-resolve oleh Staff.
+
 ```
 PATCH /api/v1/tickets/:id/pending
 Content-Type: application/json
@@ -600,7 +609,7 @@ Content-Type: application/json
 
 ### 3.9 Resolve Tiket (Staff)
 
-Staff menyelesaikan tiket dengan memberikan arahan/solusi. Bisa dari status `IN_PROGRESS` atau `PENDING`.
+Staff menyelesaikan tiket dengan memberikan arahan/solusi. **Hanya bisa dari status `IN_PROGRESS`**. Jika tiket sedang `PENDING`, harus diubah ke `IN_PROGRESS` terlebih dahulu oleh Manager.
 
 ```
 PATCH /api/v1/tickets/:id/resolve
@@ -622,9 +631,9 @@ Content-Type: application/json
 
 ---
 
-### 3.10 Set Difficulty (Tingkat Kesulitan)
+### 3.10 Set Difficulty (Tingkat Kesulitan) -- Manager Only
 
-Mengatur tingkat kesulitan tiket. Ini menentukan berapa poin yang diberikan saat tiket ditutup.
+Mengatur tingkat kesulitan tiket. **Hanya Manager** yang dapat mengatur ini. Ini menentukan berapa poin yang diberikan saat tiket ditutup.
 
 ```
 PATCH /api/v1/tickets/:id/difficulty
@@ -1150,15 +1159,28 @@ Body: { "staff_id": "staffId-dari-login" }
 POST /api/v1/chat/{ticketId}
 Body: { "sender_id": "staffId", "message": "Saya sedang cek masalahnya" }
 
+(Opsional) Staff pending tiket:
+PATCH /api/v1/tickets/{ticketId}/pending
+Body: { "staff_id": "staffId", "pending_reason": "Menunggu sparepart" }
+
+(Jika pending) Manager kembalikan ke IN_PROGRESS:
+PATCH /api/v1/tickets/{ticketId}/status
+Body: { "status": "IN_PROGRESS" }
+
+Staff resolve tiket (harus dari IN_PROGRESS):
 PATCH /api/v1/tickets/{ticketId}/resolve
 Body: { "staff_id": "staffId", "resolution_note": "Sudah diperbaiki, caranya..." }
 ```
 
-### 5. Manager Tutup Tiket
+### 5. Manager Set Difficulty & Tutup Tiket
 ```
+PATCH /api/v1/tickets/{ticketId}/difficulty
+Body: { "difficulty_level": 2 }
+→ Hanya Manager yang bisa set difficulty
+
 PATCH /api/v1/tickets/{ticketId}/status
 Body: { "status": "CLOSED" }
-→ Poin otomatis diberikan ke staff
+→ Poin otomatis diberikan ke staff (10 × difficulty)
 
 GET /api/v1/leaderboard?view=monthly&month=4&year=2026
 → Tampilkan ranking staff

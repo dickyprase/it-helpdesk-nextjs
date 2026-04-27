@@ -69,10 +69,11 @@ async function saveAttachments(
 }
 
 // MANAGER transitions
+// Flow: OPEN → IN_PROGRESS → PENDING (optional) → IN_PROGRESS → RESOLVED → CLOSED
 const MANAGER_TRANSITIONS: Record<string, string[]> = {
   OPEN: ['IN_PROGRESS', 'CLOSED'],
   IN_PROGRESS: ['PENDING', 'RESOLVED', 'OPEN'],
-  PENDING: ['IN_PROGRESS', 'RESOLVED'],
+  PENDING: ['IN_PROGRESS'],
   RESOLVED: ['CLOSED', 'IN_PROGRESS'],
   CLOSED: [],
 };
@@ -447,9 +448,9 @@ export async function resolveTicketAction(
   if (ticket.staff_id !== session.id) {
     return { success: false, error: 'Anda bukan staff yang ditugaskan untuk tiket ini' };
   }
-  // Allow resolve from IN_PROGRESS or PENDING
-  if (ticket.status !== 'IN_PROGRESS' && ticket.status !== 'PENDING') {
-    return { success: false, error: 'Hanya tiket In Progress atau Pending yang dapat diselesaikan' };
+  // Resolve only from IN_PROGRESS (PENDING must go back to IN_PROGRESS first)
+  if (ticket.status !== 'IN_PROGRESS') {
+    return { success: false, error: 'Hanya tiket dengan status Diproses yang dapat diselesaikan. Jika tiket Tertunda, ubah ke Diproses terlebih dahulu.' };
   }
 
   await prisma.ticket.update({
@@ -471,7 +472,7 @@ export async function resolveTicketAction(
   return { success: true };
 }
 
-// ===== SET DIFFICULTY (STAFF, when assigned/claiming) =====
+// ===== SET DIFFICULTY (MANAGER only) =====
 export async function setDifficultyAction(
   _prevState: TicketActionResult | null,
   formData: FormData
@@ -480,8 +481,8 @@ export async function setDifficultyAction(
   if (!session) {
     return { success: false, error: 'Anda harus login terlebih dahulu' };
   }
-  if (session.role !== 'STAFF' && session.role !== 'MANAGER') {
-    return { success: false, error: 'Hanya staff/manager yang dapat mengatur level kesulitan' };
+  if (session.role !== 'MANAGER') {
+    return { success: false, error: 'Hanya Manager yang dapat mengatur level kesulitan' };
   }
 
   const raw = {
@@ -501,10 +502,7 @@ export async function setDifficultyAction(
     return { success: false, error: 'Tiket tidak ditemukan' };
   }
 
-  // STAFF can only change difficulty on their own tickets
-  if (session.role === 'STAFF' && ticket.staff_id !== session.id) {
-    return { success: false, error: 'Anda hanya dapat mengatur kesulitan tiket yang ditugaskan kepada Anda' };
-  }
+  // Only MANAGER can set difficulty (already checked above)
 
   await prisma.ticket.update({
     where: { id: parsed.data.ticket_id },
