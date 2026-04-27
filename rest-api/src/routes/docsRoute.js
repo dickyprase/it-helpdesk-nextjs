@@ -120,14 +120,18 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .content pre code{background:none;border:none;padding:1rem 1.1rem;display:block;color:var(--code-text);font-size:.8rem;line-height:1.75;font-family:'JetBrains Mono','Fira Code','SF Mono',Consolas,monospace}
 
 /* Line numbers */
-.content pre code .hljs-ln-numbers{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;text-align:right;color:var(--ln-c);border-right:1px solid var(--ln-border);padding-right:12px;width:32px;min-width:32px}
-.content pre code .hljs-ln-code{padding-left:14px}
+.content pre code .hljs-ln-numbers{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;text-align:right;color:var(--ln-c);border-right:1px solid var(--ln-border);padding-right:18px;width:36px;min-width:36px}
+.content pre code .hljs-ln-code{padding-left:22px}
 .content pre code table.hljs-ln{border:none;margin:0}
 .content pre code table.hljs-ln tr{border:none}
 .content pre code table.hljs-ln td{border:none;padding:1px 0}
 
-/* Language badge */
-.code-lang{position:absolute;top:7px;right:52px;background:var(--lang-bg);color:var(--lang-c);font-size:.65rem;padding:2px 8px;border-radius:4px;font-family:system-ui;text-transform:uppercase;letter-spacing:.05em;pointer-events:none}
+/* Copy button — always visible top-right */
+.copy-btn{position:absolute;top:8px;right:8px;background:var(--lang-bg);border:1px solid var(--code-border);color:var(--lang-c);border-radius:6px;padding:4px 14px;font-size:.72rem;cursor:pointer;transition:all .15s;z-index:2;font-family:system-ui;line-height:1.4}
+.copy-btn:hover{background:var(--code-border);color:var(--code-text)}
+
+/* Language badge — left of copy button */
+.code-lang{position:absolute;top:10px;right:80px;background:var(--lang-bg);color:var(--ln-c);font-size:.6rem;padding:2px 8px;border-radius:4px;font-family:system-ui;text-transform:uppercase;letter-spacing:.06em;pointer-events:none}
 .table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
 .content table{width:100%;border-collapse:collapse;margin:.65rem 0;font-size:.85rem;border:1px solid var(--b);border-radius:9px;overflow:hidden}
 .content thead th{background:var(--bg-tbl-h);color:var(--c);font-weight:600;text-align:left;padding:9px 12px;border-bottom:2px solid var(--b);font-size:.78rem;text-transform:uppercase;letter-spacing:.03em}
@@ -280,11 +284,22 @@ document.querySelectorAll('pre code').forEach(function(block){
   }
 });
 
-// Copy buttons
-document.querySelectorAll('.content pre').forEach(function(pre){var btn=document.createElement('button');btn.textContent='Copy';btn.style.cssText='position:absolute;top:7px;right:7px;background:var(--lang-bg);border:1px solid var(--code-border);color:var(--lang-c);border-radius:5px;padding:2px 10px;font-size:.7rem;cursor:pointer;opacity:0;transition:opacity .15s;z-index:2;font-family:system-ui';btn.onclick=function(){
-  var lines=pre.querySelectorAll('.hljs-ln-code');
-  var text=lines.length?Array.from(lines).map(function(td){return td.textContent}).join('\\n'):pre.querySelector('code').textContent;
-  navigator.clipboard.writeText(text).then(function(){btn.textContent='Copied!';btn.style.color='var(--hl-string)';setTimeout(function(){btn.textContent='Copy';btn.style.color='var(--lang-c)'},1500)})};pre.style.position='relative';pre.appendChild(btn);pre.onmouseenter=function(){btn.style.opacity='1'};pre.onmouseleave=function(){btn.style.opacity='0'}});
+// Copy buttons — always visible
+document.querySelectorAll('.content pre').forEach(function(pre){
+  var btn=document.createElement('button');
+  btn.textContent='Copy';
+  btn.className='copy-btn';
+  btn.onclick=function(){
+    var lines=pre.querySelectorAll('.hljs-ln-code');
+    var text=lines.length?Array.from(lines).map(function(td){return td.textContent}).join('\\n'):pre.querySelector('code').textContent;
+    navigator.clipboard.writeText(text).then(function(){
+      btn.textContent='Copied!';
+      btn.style.color='var(--hl-string)';
+      setTimeout(function(){btn.textContent='Copy';btn.style.color=''},1500);
+    });
+  };
+  pre.appendChild(btn);
+});
 
 // Close sidebar on nav click (mobile)
 document.querySelectorAll('.nav-item').forEach(function(a){a.addEventListener('click',closeSidebar)});
