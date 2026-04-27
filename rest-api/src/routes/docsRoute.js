@@ -94,9 +94,16 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .content hr{border:none;border-top:1px solid var(--b);margin:1.8rem 0}
 .content ul,.content ol{margin:.4rem 0;padding-left:1.4rem;color:var(--c2)}
 .content li{margin:.2rem 0}
-.content code{font-family:'SF Mono','Fira Code',Consolas,monospace;font-size:.84em;background:var(--bg3);color:var(--c-code-i);padding:1.5px 5px;border-radius:4px;border:1px solid var(--b)}
-.content pre{background:var(--bg-code);border:1px solid var(--b);border-radius:9px;padding:.9rem 1.1rem;overflow-x:auto;margin:.65rem 0;position:relative}
-.content pre code{background:none;border:none;padding:0;color:var(--c-code);font-size:.8rem;line-height:1.6}
+.content code{font-family:'JetBrains Mono','Fira Code','SF Mono',Consolas,monospace;font-size:.84em;background:var(--bg3);color:var(--c-code-i);padding:1.5px 5px;border-radius:4px;border:1px solid var(--b)}
+.content pre{background:#282c34;border:1px solid var(--b);border-radius:9px;overflow-x:auto;margin:.65rem 0;position:relative;padding:0}
+.content pre code{background:none;border:none;padding:1rem 1.1rem;display:block;color:#abb2bf;font-size:.8rem;line-height:1.7;font-family:'JetBrains Mono','Fira Code','SF Mono',Consolas,monospace;counter-reset:line}
+.content pre code .hljs-ln-numbers{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;text-align:right;color:#636d83;border-right:1px solid #3e4451;padding-right:10px;width:30px;min-width:30px}
+.content pre code .hljs-ln-code{padding-left:12px}
+.content pre code table.hljs-ln{border:none;margin:0}
+.content pre code table.hljs-ln tr{border:none}
+.content pre code table.hljs-ln td{border:none;padding:0 0}
+/* Language badge */
+.code-lang{position:absolute;top:6px;right:50px;background:rgba(255,255,255,.08);color:#636d83;font-size:.65rem;padding:2px 8px;border-radius:4px;font-family:system-ui;text-transform:uppercase;letter-spacing:.05em;pointer-events:none}
 .table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
 .content table{width:100%;border-collapse:collapse;margin:.65rem 0;font-size:.85rem;border:1px solid var(--b);border-radius:9px;overflow:hidden}
 .content thead th{background:var(--bg-tbl-h);color:var(--c);font-weight:600;text-align:left;padding:9px 12px;border-bottom:2px solid var(--b);font-size:.78rem;text-transform:uppercase;letter-spacing:.03em}
@@ -134,7 +141,29 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
   .content table{font-size:.78rem}
   .content thead th,.content tbody td{padding:6px 8px}
 }
+/* Highlight.js overrides */
+.hljs{background:transparent!important;padding:0!important}
+pre .hljs-comment{color:#7f848e;font-style:italic}
+pre .hljs-keyword,pre .hljs-selector-tag{color:#c678dd}
+pre .hljs-string,pre .hljs-attr{color:#98c379}
+pre .hljs-number,pre .hljs-literal{color:#d19a66}
+pre .hljs-built_in,pre .hljs-type{color:#e5c07b}
+pre .hljs-function .hljs-title,pre .hljs-title.function_{color:#61afef}
+pre .hljs-variable,pre .hljs-template-variable{color:#e06c75}
+pre .hljs-tag{color:#e06c75}
+pre .hljs-name{color:#e06c75}
+pre .hljs-attribute{color:#d19a66}
+pre .hljs-symbol,pre .hljs-bullet{color:#56b6c2}
+pre .hljs-meta{color:#636d83}
+pre .hljs-title.class_{color:#e5c07b}
 </style>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/php.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/bash.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/json.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/javascript.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlightjs-line-numbers.js/2.8.0/highlightjs-line-numbers.min.js"></script>
 </head>
 <body>
 <!-- Top Bar -->
@@ -210,8 +239,26 @@ function closeSidebar(){document.getElementById('sidebar').classList.remove('ope
 // Wrap tables
 document.querySelectorAll('.content table').forEach(function(t){if(!t.parentElement.classList.contains('table-wrap')){var w=document.createElement('div');w.className='table-wrap';t.parentNode.insertBefore(w,t);w.appendChild(t)}});
 
-// Copy buttons
-document.querySelectorAll('.content pre').forEach(function(pre){var btn=document.createElement('button');btn.textContent='Copy';btn.style.cssText='position:absolute;top:7px;right:7px;background:var(--bg2);border:1px solid var(--b);color:var(--c3);border-radius:5px;padding:2px 9px;font-size:.7rem;cursor:pointer;opacity:0;transition:opacity .15s';btn.onclick=function(){var c=pre.querySelector('code');navigator.clipboard.writeText(c.textContent).then(function(){btn.textContent='Copied!';btn.style.color='#16a34a';setTimeout(function(){btn.textContent='Copy';btn.style.color='var(--c3)'},1500)})};pre.style.position='relative';pre.appendChild(btn);pre.onmouseenter=function(){btn.style.opacity='1'};pre.onmouseleave=function(){btn.style.opacity='0'}});
+// Syntax highlighting + line numbers
+document.querySelectorAll('pre code').forEach(function(block){
+  hljs.highlightElement(block);
+  hljs.lineNumbersBlock(block);
+  // Add language badge
+  var lang = block.className.match(/language-(\w+)/);
+  if(lang && lang[1]){
+    var badge = document.createElement('span');
+    badge.className='code-lang';
+    badge.textContent=lang[1];
+    block.parentElement.appendChild(badge);
+  }
+});
+
+// Copy buttons (adjusted position for language badge)
+document.querySelectorAll('.content pre').forEach(function(pre){var btn=document.createElement('button');btn.textContent='Copy';btn.style.cssText='position:absolute;top:6px;right:7px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.1);color:#636d83;border-radius:5px;padding:2px 9px;font-size:.7rem;cursor:pointer;opacity:0;transition:opacity .15s;z-index:2';btn.onclick=function(){
+  // Get only the code text, not line numbers
+  var lines=pre.querySelectorAll('.hljs-ln-code');
+  var text=lines.length?Array.from(lines).map(function(td){return td.textContent}).join('\\n'):pre.querySelector('code').textContent;
+  navigator.clipboard.writeText(text).then(function(){btn.textContent='Copied!';btn.style.color='#98c379';setTimeout(function(){btn.textContent='Copy';btn.style.color='#636d83'},1500)})};pre.style.position='relative';pre.appendChild(btn);pre.onmouseenter=function(){btn.style.opacity='1'};pre.onmouseleave=function(){btn.style.opacity='0'}});
 
 // Close sidebar on nav click (mobile)
 document.querySelectorAll('.nav-item').forEach(function(a){a.addEventListener('click',closeSidebar)});
