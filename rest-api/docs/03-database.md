@@ -1,34 +1,26 @@
-# Database Schema
+# Database & ERD
 
-## ERD (Entity Relationship Diagram)
+## Entity Relationship Diagram
+
+![ERD IT Helpdesk](/docs/images/erd.svg)
+
+## Relasi Antar Tabel
 
 ```
-┌──────────┐       ┌──────────┐       ┌──────────────┐
-│   User   │1────N│  Ticket  │N────1│   Category   │
-│          │       │          │       └──────────────┘
-│ id       │       │ id       │
-│ name     │       │ code     │       ┌──────────────┐
-│ email    │       │ title    │1────N│    Chat      │
-│ phone    │       │ status   │       │ id           │
-│ role     │       │ staff_id │       │ message      │
-│ is_active│       │ user_id  │       │ sender_id ──────> User
-│          │       │          │       └──────────────┘
-│          │1────N│          │
-│ (staff)  │       │          │       ┌──────────────┐
-└──────────┘       │          │1────N│  Attachment  │
-      │            └──────────┘       └──────────────┘
-      │                  │
-      │1────N      │1────N
-      │            │
-┌──────────┐  ┌──────────────┐
-│ Session  │  │LeaderboardLog│
-└──────────┘  └──────────────┘
-
-┌──────────────┐  ┌─────────────────────┐
-│  WA_Setting  │  │ Notification_Template│
-│ (standalone) │  │    (standalone)      │
-└──────────────┘  └─────────────────────┘
+User 1──N Ticket     (sebagai pembuat)
+User 1──N Ticket     (sebagai staff handler)
+User 1──N Chat       (sebagai pengirim)
+User 1──N LeaderboardLog
+User 1──N Session
+Category 1──N Ticket
+Ticket 1──N Chat
+Ticket 1──N TicketAttachment (cascade delete)
+Ticket 1──N LeaderboardLog
+WA_Setting (standalone, 1 row)
+Notification_Template (standalone, 1 row per event_type)
 ```
+
+---
 
 ## Tabel Detail
 
@@ -71,7 +63,7 @@
 | `title` | String | NOT NULL | 5-200 karakter |
 | `description` | String | NOT NULL | 10-5000 karakter |
 | `status` | Enum | NOT NULL, default `OPEN` | `OPEN`, `IN_PROGRESS`, `PENDING`, `RESOLVED`, `CLOSED` |
-| `difficulty_level` | Int | default `1` | 1 (Mudah), 2 (Sedang), 3 (Sulit) |
+| `difficulty_level` | Int | default `1` | 1 (Mudah), 2 (Sedang), 3 (Sulit). Hanya Manager |
 | `resolution_note` | Text | nullable | Arahan/solusi dari staff |
 | `pending_reason` | Text | nullable | Alasan pending |
 | `category_id` | UUID | FK → Category | Index |
@@ -139,19 +131,7 @@
 | `created_at` | DateTime | auto | |
 | `updated_at` | DateTime | auto | |
 
-## Relasi Antar Tabel
-
-```
-User 1──N Ticket     (sebagai pembuat)
-User 1──N Ticket     (sebagai staff handler)
-User 1──N Chat       (sebagai pengirim)
-User 1──N LeaderboardLog
-User 1──N Session
-Category 1──N Ticket
-Ticket 1──N Chat
-Ticket 1──N TicketAttachment (cascade delete)
-Ticket 1──N LeaderboardLog
-```
+---
 
 ## Scoring System
 
@@ -163,4 +143,4 @@ Difficulty 2 (Sedang) → 20 poin
 Difficulty 3 (Sulit)  → 30 poin
 ```
 
-Poin dicatat di tabel `LeaderboardLog` saat Manager mengubah status tiket ke `CLOSED`. Setiap tiket hanya menghasilkan 1 entry leaderboard (dicek duplikat).
+Poin dicatat di tabel `LeaderboardLog` saat Manager mengubah status tiket ke `CLOSED`. Setiap tiket hanya menghasilkan 1 entry leaderboard (dicek duplikat). Hanya **Manager** yang bisa mengatur difficulty level.

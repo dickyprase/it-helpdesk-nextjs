@@ -1,5 +1,11 @@
 # Alur Aplikasi
 
+## Flowchart Sistem
+
+![Flowchart IT Helpdesk](/docs/images/flowchart.jpg)
+
+---
+
 ## Ticket Status Flow
 
 ```
