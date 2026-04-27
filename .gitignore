@@ -50,3 +50,6 @@ next-env.d.ts
 
 # WhatsApp auth session
 .wa-auth/
+
+# REST API
+rest-api/node_modules/
