@@ -13,6 +13,7 @@ const ticketRoutes = require('./routes/ticketRoutes');
 const chatRoutes = require('./routes/chatRoutes');
 const leaderboardRoutes = require('./routes/leaderboardRoutes');
 const profileRoutes = require('./routes/profileRoutes');
+const docsRoute = require('./routes/docsRoute');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -21,6 +22,9 @@ const PORT = process.env.PORT || 3001;
 app.use(cors());
 app.use(express.json());
 app.use(morgan('dev'));
+
+// API Documentation (web)
+app.use('/docs', docsRoute);
 
 // Health check
 app.get('/api/v1', (_req, res) => {
@@ -47,5 +51,6 @@ app.use(errorHandler);
 // Start server
 app.listen(PORT, () => {
   console.log(`[API] Server running on http://localhost:${PORT}`);
+  console.log(`[API] Documentation: http://localhost:${PORT}/docs`);
   console.log(`[API] Health check: http://localhost:${PORT}/api/v1`);
 });
