@@ -2,13 +2,19 @@
 
 Semua endpoint menggunakan prefix `/api/v1`.
 
+**Header wajib untuk endpoint yang butuh auth:**
+```
+Authorization: Bearer <token-dari-login>
+Content-Type: application/json
+```
+
 ---
 
 ## 1. Auth
 
 ### POST `/api/v1/auth/login`
 
-Login ke sistem.
+Login ke sistem. **Tidak perlu token.**
 
 **Request Body:**
 ```json
@@ -28,28 +34,32 @@ Login ke sistem.
 {
   "error": false,
   "data": {
-    "id": "a4f54394-bd7d-44e6-a9fd-749fb9928204",
-    "name": "Super Admin",
-    "email": "admin@helpdesk.local",
-    "phone": null,
-    "role": "MANAGER",
-    "is_active": true,
-    "created_at": "2026-04-21T15:07:10.123Z"
+    "user": {
+      "id": "a4f54394-...",
+      "name": "Super Admin",
+      "email": "admin@helpdesk.local",
+      "phone": null,
+      "role": "MANAGER",
+      "is_active": true,
+      "created_at": "2026-04-21T15:07:10.123Z"
+    },
+    "token": "abc123def456ghi789jkl012mno345pqr678stu901vwx234",
+    "expires_at": "2026-04-29T15:07:10.123Z"
   }
 }
 ```
 
-> **Simpan `id` dan `role`** dari response ini untuk digunakan di endpoint lain.
+> **Simpan `token`** di localStorage. Gunakan di header `Authorization: Bearer <token>` untuk semua request selanjutnya.
 
 **Error (401):** `{ "error": true, "message": "Email atau password salah" }`
 
-**Error (403):** `{ "error": true, "message": "Akun Anda telah dinonaktifkan. Hubungi administrator." }`
+**Error (403):** `{ "error": true, "message": "Akun Anda telah dinonaktifkan" }`
 
 ---
 
 ### POST `/api/v1/auth/register`
 
-Daftar akun baru (otomatis role `USER`).
+Daftar akun baru (otomatis role `USER`). **Tidak perlu token.** Otomatis login setelah register.
 
 **Request Body:**
 ```json
@@ -68,13 +78,50 @@ Daftar akun baru (otomatis role `USER`).
 | `phone` | string | Tidak | Nomor WhatsApp |
 | `password` | string | Ya | 6-100 karakter |
 
-**Success (201):** Data user yang baru dibuat.
+**Success (201):** Sama seperti login (return user + token).
 
-**Error (409):** `{ "error": true, "message": "Email sudah terdaftar" }`
+---
+
+### POST `/api/v1/auth/logout`
+
+Logout dan hapus session. Token tidak bisa dipakai lagi.
+
+**Headers:** `Authorization: Bearer <token>`
+
+**Success (200):**
+```json
+{ "error": false, "message": "Berhasil logout" }
+```
+
+---
+
+### GET `/api/v1/auth/me`
+
+Cek siapa user yang sedang login berdasarkan token.
+
+**Headers:** `Authorization: Bearer <token>`
+
+**Success (200):**
+```json
+{
+  "error": false,
+  "data": {
+    "id": "a4f54394-...",
+    "name": "Super Admin",
+    "email": "admin@helpdesk.local",
+    "phone": null,
+    "role": "MANAGER"
+  }
+}
+```
+
+**Error (401):** `{ "error": true, "message": "Token tidak valid atau sudah expired. Silakan login ulang." }`
 
 ---
 
 ## 2. Categories
+
+**Auth:** Token wajib (semua role)
 
 ### GET `/api/v1/categories`
 
@@ -94,15 +141,15 @@ List semua kategori. **Panggil ini dulu** sebelum membuat tiket.
 }
 ```
 
-> Gunakan `id` dari sini sebagai `category_id` saat membuat tiket.
-
 ---
 
 ## 3. Tickets
 
+**Auth:** Token wajib. Role-specific per endpoint.
+
 ### GET `/api/v1/tickets`
 
-List tiket dengan filter opsional.
+**Role:** Semua. USER otomatis hanya melihat tiket sendiri.
 
 **Query Parameters:**
 
@@ -110,67 +157,30 @@ List tiket dengan filter opsional.
 |-------|------|--------|------------|
 | `status` | string | `OPEN` | `OPEN`, `IN_PROGRESS`, `PENDING`, `RESOLVED`, `CLOSED` |
 | `category_id` | UUID | `0e405668-...` | Dari `GET /categories` |
-| `user_id` | UUID | | Tiket milik user tertentu |
-| `staff_id` | UUID | | Tiket yang ditangani staff tertentu |
 | `search` | string | `printer` | Cari di judul, kode, deskripsi |
 | `limit` | number | `10` | Pagination: jumlah per halaman |
 | `offset` | number | `0` | Pagination: mulai dari data ke-berapa |
 
-**Contoh:**
-```
-GET /api/v1/tickets?status=OPEN&limit=10&offset=0
-GET /api/v1/tickets?search=printer
-```
-
-**Pagination:**
-```
-Halaman 1: ?limit=10&offset=0
-Halaman 2: ?limit=10&offset=10
-Halaman 3: ?limit=10&offset=20
-```
-
-**Success (200):**
-```json
-{
-  "error": false,
-  "data": [
-    {
-      "id": "753b236a-...",
-      "code": "TKT-MO9FSJTF-EUYE",
-      "title": "Printer lantai 2 error",
-      "status": "OPEN",
-      "difficulty_level": 1,
-      "category": { "id": "...", "name": "Hardware" },
-      "user": { "id": "...", "name": "dicky", "role": "USER" },
-      "staff": null
-    }
-  ]
-}
-```
+> **Catatan:** `user_id` dan `staff_id` filter masih bisa digunakan oleh STAFF/MANAGER. USER tidak perlu kirim `user_id` — otomatis difilter.
 
 ---
 
 ### GET `/api/v1/tickets/:id`
 
-Detail tiket + attachments.
-
-**Success (200):** Sama seperti list, ditambah field `attachments` (array) dan `resolution_note`, `pending_reason`.
-
-**Error (404):** `{ "error": true, "message": "Tiket tidak ditemukan" }`
+**Role:** Semua. USER hanya bisa lihat tiket sendiri.
 
 ---
 
 ### POST `/api/v1/tickets`
 
-Buat tiket baru.
+**Role:** USER only
 
 **Request Body:**
 ```json
 {
   "title": "Printer lantai 2 error",
   "description": "Printer HP LaserJet error code E-05. Sudah coba restart tapi tetap error.",
-  "category_id": "0e405668-b47e-4fcc-aa1a-373892dcd6ef",
-  "user_id": "728db994-ee5e-4792-a735-e263ae019e36"
+  "category_id": "0e405668-b47e-4fcc-aa1a-373892dcd6ef"
 }
 ```
 
@@ -179,49 +189,43 @@ Buat tiket baru.
 | `title` | string | Ya | 5-200 karakter |
 | `description` | string | Ya | 10-5000 karakter |
 | `category_id` | UUID | Ya | Dari `GET /api/v1/categories` |
-| `user_id` | UUID | Ya | Dari response login |
 
-**Success (201):** Data tiket baru (status: `OPEN`).
+> `user_id` **tidak perlu dikirim** — otomatis dari token.
 
 ---
 
 ### POST `/api/v1/tickets/:id/claim`
 
-Staff klaim tiket OPEN. Status → `IN_PROGRESS`.
+**Role:** STAFF / MANAGER
 
-**Request Body:**
-```json
-{ "staff_id": "a82f29aa-b7f9-4c0c-b8d0-991fe664dce2" }
-```
+Tidak perlu request body. `staff_id` otomatis dari token.
 
 **Error (409):** `{ "error": true, "message": "Tiket sudah diklaim oleh staff lain" }`
-
-**Error (400):** `{ "error": true, "message": "Hanya tiket OPEN yang dapat diklaim" }`
 
 ---
 
 ### POST `/api/v1/tickets/:id/unclaim`
 
-Staff lepas tiket. Status → `OPEN`.
+**Role:** STAFF only
 
 **Request Body:**
 ```json
 {
-  "staff_id": "a82f29aa-...",
   "unclaim_reason": "Saya tidak memiliki keahlian untuk masalah ini"
 }
 ```
 
 | Field | Tipe | Wajib | Keterangan |
 |-------|------|-------|------------|
-| `staff_id` | UUID | Ya | Harus staff yang sedang menangani |
 | `unclaim_reason` | string | Ya | 5-2000 karakter |
+
+> `staff_id` **tidak perlu dikirim** — otomatis dari token. Harus staff yang sedang menangani.
 
 ---
 
 ### POST `/api/v1/tickets/:id/assign`
 
-Manager assign staff ke tiket.
+**Role:** MANAGER only
 
 **Request Body:**
 ```json
@@ -234,16 +238,12 @@ Manager assign staff ke tiket.
 
 ### PATCH `/api/v1/tickets/:id/status`
 
-Manager ubah status tiket.
+**Role:** MANAGER only
 
 **Request Body:**
 ```json
 { "status": "CLOSED" }
 ```
-
-| Field | Tipe | Wajib | Nilai yang Diizinkan |
-|-------|------|-------|---------------------|
-| `status` | string | Ya | Tergantung status saat ini (lihat halaman Flow) |
 
 > Saat status → `CLOSED`, poin otomatis diberikan ke staff.
 
@@ -251,42 +251,43 @@ Manager ubah status tiket.
 
 ### PATCH `/api/v1/tickets/:id/pending`
 
-Staff set tiket ke PENDING. Hanya dari `IN_PROGRESS`.
+**Role:** STAFF only
 
 **Request Body:**
 ```json
 {
-  "staff_id": "a82f29aa-...",
   "pending_reason": "Menunggu sparepart dari vendor, estimasi 3 hari"
 }
 ```
 
-> **Setelah pending:** Tiket harus dikembalikan ke `IN_PROGRESS` oleh Manager sebelum bisa di-resolve.
+| Field | Tipe | Wajib | Keterangan |
+|-------|------|-------|------------|
+| `pending_reason` | string | Ya | 5-2000 karakter |
+
+> Setelah pending, tiket harus dikembalikan ke `IN_PROGRESS` oleh Manager sebelum bisa di-resolve.
 
 ---
 
 ### PATCH `/api/v1/tickets/:id/resolve`
 
-Staff resolve tiket. **Hanya dari `IN_PROGRESS`** (bukan dari PENDING).
+**Role:** STAFF only. Hanya dari status `IN_PROGRESS`.
 
 **Request Body:**
 ```json
 {
-  "staff_id": "a82f29aa-...",
   "resolution_note": "Printer sudah diganti cartridge baru. Gunakan kertas A4 70gsm."
 }
 ```
 
 | Field | Tipe | Wajib | Keterangan |
 |-------|------|-------|------------|
-| `staff_id` | UUID | Ya | Harus staff yang ditugaskan |
 | `resolution_note` | string | Ya | 10-5000 karakter |
 
 ---
 
 ### PATCH `/api/v1/tickets/:id/difficulty`
 
-**Manager only.** Set tingkat kesulitan tiket.
+**Role:** MANAGER only
 
 **Request Body:**
 ```json
@@ -301,15 +302,15 @@ Staff resolve tiket. **Hanya dari `IN_PROGRESS`** (bukan dari PENDING).
 
 ### GET `/api/v1/tickets/staff-list`
 
-List staff aktif untuk dropdown assign.
+**Role:** Semua (untuk dropdown assign)
 
 **Success (200):**
 ```json
 {
   "error": false,
   "data": [
-    { "id": "a82f29aa-...", "name": "IT Support Staff", "email": "staff@helpdesk.local", "role": "STAFF" },
-    { "id": "a4f54394-...", "name": "Super Admin", "email": "admin@helpdesk.local", "role": "MANAGER" }
+    { "id": "a82f29aa-...", "name": "IT Support Staff", "role": "STAFF" },
+    { "id": "a4f54394-...", "name": "Super Admin", "role": "MANAGER" }
   ]
 }
 ```
@@ -318,26 +319,11 @@ List staff aktif untuk dropdown assign.
 
 ## 4. Chat
 
+**Auth:** Token wajib (semua role)
+
 ### GET `/api/v1/chat/:ticketId`
 
 Ambil semua pesan chat pada tiket.
-
-**Success (200):**
-```json
-{
-  "error": false,
-  "data": [
-    {
-      "id": "uuid-msg",
-      "message": "Halo, printer saya error",
-      "sender_id": "728db994-...",
-      "sender_name": "dicky",
-      "sender_role": "USER",
-      "created_at": "2026-04-22T08:35:00.000Z"
-    }
-  ]
-}
-```
 
 ---
 
@@ -348,53 +334,33 @@ Kirim pesan chat.
 **Request Body:**
 ```json
 {
-  "sender_id": "a82f29aa-...",
   "message": "Baik, saya akan cek printer tersebut."
 }
 ```
 
 | Field | Tipe | Wajib | Keterangan |
 |-------|------|-------|------------|
-| `sender_id` | UUID | Ya | Dari response login |
 | `message` | string | Ya | 1-2000 karakter |
+
+> `sender_id` **tidak perlu dikirim** — otomatis dari token.
 
 ---
 
-## 5. Users (Manager)
+## 5. Users (Manager Only)
+
+**Auth:** Token wajib + role MANAGER
 
 ### GET `/api/v1/users`
 
 List semua user + statistik.
 
-**Success (200):**
-```json
-{
-  "error": false,
-  "data": [
-    {
-      "id": "728db994-...",
-      "name": "dicky",
-      "email": "dicky@local.com",
-      "role": "USER",
-      "is_active": true,
-      "tickets_created": 3,
-      "tickets_handled": 0
-    }
-  ]
-}
-```
-
----
-
 ### GET `/api/v1/users/:id`
 
 Detail satu user.
 
----
-
 ### POST `/api/v1/users`
 
-Manager buat user baru.
+Buat user baru.
 
 **Request Body:**
 ```json
@@ -415,11 +381,9 @@ Manager buat user baru.
 | `password` | string | Ya | 6-100 karakter |
 | `role` | string | Ya | `USER` atau `STAFF` |
 
----
-
 ### PUT `/api/v1/users/:id`
 
-Update user.
+Update user. Tidak bisa edit diri sendiri (gunakan `/profile`).
 
 **Request Body:**
 ```json
@@ -431,29 +395,17 @@ Update user.
 }
 ```
 
----
-
 ### PATCH `/api/v1/users/:id/toggle-active`
 
-Toggle aktif/nonaktif. Tidak perlu request body.
-
-**Success (200):**
-```json
-{
-  "error": false,
-  "data": { "id": "...", "name": "dicky", "is_active": false }
-}
-```
-
-> Saat dinonaktifkan, semua sesi login user otomatis dihapus.
+Toggle aktif/nonaktif. Tidak perlu body. Tidak bisa menonaktifkan diri sendiri.
 
 ---
 
 ## 6. Leaderboard
 
-### GET `/api/v1/leaderboard`
+**Auth:** Token wajib + role STAFF atau MANAGER
 
-Ranking staff berdasarkan poin.
+### GET `/api/v1/leaderboard`
 
 **Query Parameters:**
 
@@ -463,71 +415,27 @@ Ranking staff berdasarkan poin.
 | `month` | bulan ini | 1-12 (hanya untuk monthly) |
 | `year` | tahun ini | e.g. 2026 |
 
-**Contoh:** `GET /api/v1/leaderboard?view=monthly&month=4&year=2026`
-
-**Success (200):**
-```json
-{
-  "error": false,
-  "data": [
-    { "staff_id": "...", "staff_name": "IT Support Staff", "total_points": 50, "tickets_closed": 3 }
-  ]
-}
-```
-
----
-
 ### GET `/api/v1/leaderboard/periods`
 
 Periode yang memiliki data.
 
-**Success (200):**
-```json
-{
-  "error": false,
-  "data": [
-    { "period_month": 4, "period_year": 2026 }
-  ]
-}
-```
-
----
-
 ### GET `/api/v1/leaderboard/:staffId`
 
-Detail stats staff + riwayat poin.
-
-**Query Parameters:** Sama seperti ranking.
-
-**Success (200):**
-```json
-{
-  "error": false,
-  "data": {
-    "name": "IT Support Staff",
-    "total_points": 50,
-    "tickets_closed": 3,
-    "avg_difficulty": "1.7",
-    "logs": [
-      { "points": 20, "ticket": { "code": "TKT-XXX", "title": "...", "difficulty_level": 2 } }
-    ]
-  }
-}
-```
+Detail stats staff + riwayat poin. Query params sama seperti ranking.
 
 ---
 
 ## 7. Profile
 
-### GET `/api/v1/profile/:userId`
+**Auth:** Token wajib. Otomatis mengakses profil user yang login.
 
-Ambil profil user.
+### GET `/api/v1/profile`
 
----
+Ambil profil sendiri. Tidak perlu kirim userId.
 
-### PUT `/api/v1/profile/:userId`
+### PUT `/api/v1/profile`
 
-Update profil.
+Update profil sendiri.
 
 **Request Body:**
 ```json
@@ -538,11 +446,9 @@ Update profil.
 }
 ```
 
----
+### PUT `/api/v1/profile/password`
 
-### PUT `/api/v1/profile/:userId/password`
-
-Ganti password.
+Ganti password sendiri.
 
 **Request Body:**
 ```json
@@ -552,11 +458,42 @@ Ganti password.
 }
 ```
 
-| Field | Tipe | Wajib | Keterangan |
-|-------|------|-------|------------|
-| `current_password` | string | Ya | Password saat ini |
-| `new_password` | string | Ya | 6-100 karakter |
-
 **Success (200):** `{ "error": false, "message": "Password berhasil diubah" }`
 
 **Error (400):** `{ "error": true, "message": "Password saat ini salah" }`
+
+---
+
+## Ringkasan Auth per Endpoint
+
+| Endpoint | Method | Auth | Role |
+|----------|--------|------|------|
+| `/auth/login` | POST | ❌ | Public |
+| `/auth/register` | POST | ❌ | Public |
+| `/auth/logout` | POST | ✅ | Semua |
+| `/auth/me` | GET | ✅ | Semua |
+| `/categories` | GET | ✅ | Semua |
+| `/tickets` | GET | ✅ | Semua (USER: tiket sendiri) |
+| `/tickets/:id` | GET | ✅ | Semua (USER: tiket sendiri) |
+| `/tickets` | POST | ✅ | USER |
+| `/tickets/:id/claim` | POST | ✅ | STAFF, MANAGER |
+| `/tickets/:id/unclaim` | POST | ✅ | STAFF |
+| `/tickets/:id/assign` | POST | ✅ | MANAGER |
+| `/tickets/:id/status` | PATCH | ✅ | MANAGER |
+| `/tickets/:id/pending` | PATCH | ✅ | STAFF |
+| `/tickets/:id/resolve` | PATCH | ✅ | STAFF |
+| `/tickets/:id/difficulty` | PATCH | ✅ | MANAGER |
+| `/tickets/staff-list` | GET | ✅ | Semua |
+| `/chat/:ticketId` | GET | ✅ | Semua |
+| `/chat/:ticketId` | POST | ✅ | Semua |
+| `/users` | GET | ✅ | MANAGER |
+| `/users/:id` | GET | ✅ | MANAGER |
+| `/users` | POST | ✅ | MANAGER |
+| `/users/:id` | PUT | ✅ | MANAGER |
+| `/users/:id/toggle-active` | PATCH | ✅ | MANAGER |
+| `/leaderboard` | GET | ✅ | STAFF, MANAGER |
+| `/leaderboard/periods` | GET | ✅ | STAFF, MANAGER |
+| `/leaderboard/:staffId` | GET | ✅ | STAFF, MANAGER |
+| `/profile` | GET | ✅ | Semua (diri sendiri) |
+| `/profile` | PUT | ✅ | Semua (diri sendiri) |
+| `/profile/password` | PUT | ✅ | Semua (diri sendiri) |

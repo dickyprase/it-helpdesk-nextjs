@@ -1,7 +1,6 @@
 const { body } = require('express-validator');
 
 const sendMessageRules = [
-  body('sender_id').notEmpty().withMessage('Sender ID wajib diisi'),
   body('message').trim().isLength({ min: 1, max: 2000 }).withMessage('Pesan harus 1-2000 karakter'),
 ];
 

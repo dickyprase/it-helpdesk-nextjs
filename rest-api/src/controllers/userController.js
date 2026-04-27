@@ -35,6 +35,10 @@ const UserController = {
       const errors = validationResult(req);
       if (!errors.isEmpty()) return res.status(400).json({ error: true, message: errors.array()[0].msg });
 
+      if (req.params.id === req.user.id) {
+        return res.status(400).json({ error: true, message: 'Gunakan endpoint /profile untuk mengubah profil sendiri' });
+      }
+
       const user = await UserModel.update(req.params.id, req.body);
       if (!user) return res.status(404).json({ error: true, message: 'User tidak ditemukan' });
       res.json({ error: false, data: user });
@@ -43,6 +47,9 @@ const UserController = {
 
   async toggleActive(req, res, next) {
     try {
+      if (req.params.id === req.user.id) {
+        return res.status(400).json({ error: true, message: 'Anda tidak dapat menonaktifkan diri sendiri' });
+      }
       const user = await UserModel.toggleActive(req.params.id);
       if (!user) return res.status(404).json({ error: true, message: 'User tidak ditemukan' });
       res.json({ error: false, data: user });

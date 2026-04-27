@@ -8,9 +8,43 @@ Selamat datang di dokumentasi **IT Helpdesk REST API**. API ini menyediakan akse
 http://localhost:3001/api/v1
 ```
 
-## Format Response
+## Autentikasi (Session Token)
 
-Semua response menggunakan format JSON yang konsisten:
+API ini menggunakan **Bearer Token** berbasis session. Alur:
+
+1. **Login** → dapat `token` dari response
+2. **Simpan token** di frontend (localStorage / state)
+3. **Kirim token** di setiap request via header `Authorization`
+
+```
+Authorization: Bearer <token-dari-login>
+```
+
+**Contoh fetch JavaScript:**
+```javascript
+const token = localStorage.getItem('token');
+
+const res = await fetch('http://localhost:3001/api/v1/tickets', {
+  headers: {
+    'Authorization': `Bearer ${token}`
+  }
+});
+```
+
+> Token berlaku **7 hari**. Setelah expired, user harus login ulang.
+
+### Endpoint Tanpa Auth
+
+Hanya 2 endpoint yang bisa diakses tanpa token:
+
+| Endpoint | Keterangan |
+|----------|------------|
+| `POST /api/v1/auth/login` | Login |
+| `POST /api/v1/auth/register` | Register |
+
+Semua endpoint lain **wajib** menyertakan token.
+
+## Format Response
 
 **Sukses:**
 ```json
@@ -35,17 +69,11 @@ Semua response menggunakan format JSON yang konsisten:
 | `200` | OK | Request berhasil |
 | `201` | Created | Data baru berhasil dibuat |
 | `400` | Bad Request | Validasi gagal, input tidak valid |
-| `401` | Unauthorized | Email/password salah saat login |
-| `403` | Forbidden | Akun dinonaktifkan / tidak punya akses |
+| `401` | Unauthorized | Token tidak ada, tidak valid, atau expired |
+| `403` | Forbidden | Akun dinonaktifkan / role tidak sesuai |
 | `404` | Not Found | Data tidak ditemukan |
 | `409` | Conflict | Data duplikat (email sudah terdaftar, tiket sudah diklaim) |
 | `500` | Server Error | Kesalahan internal server |
-
-## Autentikasi
-
-API ini **tidak menggunakan JWT atau Bearer Token**. Semua endpoint bisa diakses langsung. Untuk operasi yang membutuhkan identitas user, kirim `user_id` atau `staff_id` di request body.
-
-> **Tips:** Setelah login, simpan `id` dan `role` dari response. Gunakan `id` tersebut sebagai `user_id` / `staff_id` di endpoint lain.
 
 ## Referensi Nilai (Enum)
 

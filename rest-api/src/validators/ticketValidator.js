@@ -4,11 +4,9 @@ const createTicketRules = [
   body('title').trim().isLength({ min: 5, max: 200 }).withMessage('Judul harus 5-200 karakter'),
   body('description').trim().isLength({ min: 10, max: 5000 }).withMessage('Deskripsi harus 10-5000 karakter'),
   body('category_id').notEmpty().withMessage('Kategori wajib dipilih'),
-  body('user_id').notEmpty().withMessage('User ID wajib diisi'),
 ];
 
 const unclaimRules = [
-  body('staff_id').notEmpty().withMessage('Staff ID wajib diisi'),
   body('unclaim_reason').trim().isLength({ min: 5, max: 2000 }).withMessage('Alasan harus 5-2000 karakter'),
 ];
 
@@ -21,12 +19,10 @@ const statusRules = [
 ];
 
 const pendingRules = [
-  body('staff_id').notEmpty().withMessage('Staff ID wajib diisi'),
   body('pending_reason').trim().isLength({ min: 5, max: 2000 }).withMessage('Alasan harus 5-2000 karakter'),
 ];
 
 const resolveRules = [
-  body('staff_id').notEmpty().withMessage('Staff ID wajib diisi'),
   body('resolution_note').trim().isLength({ min: 10, max: 5000 }).withMessage('Arahan harus 10-5000 karakter'),
 ];
 

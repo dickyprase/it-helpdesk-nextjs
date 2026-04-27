@@ -15,7 +15,7 @@ const ChatController = {
       if (!errors.isEmpty()) return res.status(400).json({ error: true, message: errors.array()[0].msg });
       const msg = await ChatModel.create({
         ticketId: req.params.ticketId,
-        senderId: req.body.sender_id,
+        senderId: req.user.id,
         message: req.body.message,
       });
       res.status(201).json({ error: false, data: msg });
