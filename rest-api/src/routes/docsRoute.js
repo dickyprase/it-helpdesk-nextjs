@@ -106,6 +106,18 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .content blockquote p{color:var(--c2);margin:0;font-size:.88rem}
 .content blockquote strong{color:var(--c)}
 
+/* ===== Images ===== */
+.content img{max-width:100%;height:auto;border-radius:9px;border:1px solid var(--b);cursor:zoom-in;transition:opacity .15s}
+.content img:hover{opacity:.85}
+
+/* ===== Lightbox ===== */
+.lightbox{display:none;position:fixed;inset:0;z-index:999;background:rgba(0,0,0,.85);backdrop-filter:blur(6px);cursor:zoom-out;align-items:center;justify-content:center;padding:1rem;opacity:0;transition:opacity .2s}
+.lightbox.open{display:flex;opacity:1}
+.lightbox img{max-width:95vw;max-height:92vh;object-fit:contain;border-radius:10px;border:none;cursor:default;box-shadow:0 8px 40px rgba(0,0,0,.5)}
+.lightbox-close{position:absolute;top:12px;right:16px;background:rgba(255,255,255,.15);border:none;color:#fff;font-size:1.6rem;width:40px;height:40px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .15s}
+.lightbox-close:hover{background:rgba(255,255,255,.3)}
+.lightbox-hint{position:absolute;bottom:16px;left:50%;transform:translateX(-50%);color:rgba(255,255,255,.5);font-size:.75rem}
+
 /* ===== Mobile ===== */
 @media(max-width:768px){
   .sidebar{position:fixed;top:52px;left:0;bottom:0;z-index:150;transform:translateX(-100%);width:280px;box-shadow:4px 0 20px rgba(0,0,0,.15)}
@@ -158,7 +170,34 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
   </main>
 </div>
 
+<!-- Lightbox -->
+<div class="lightbox" id="lightbox" onclick="closeLightbox()">
+  <button class="lightbox-close" onclick="closeLightbox()" aria-label="Tutup">&times;</button>
+  <img id="lightbox-img" src="" alt="Preview"/>
+  <span class="lightbox-hint">Klik di mana saja atau tekan Esc untuk menutup</span>
+</div>
+
 <script>
+// Lightbox
+function openLightbox(src){
+  var lb=document.getElementById('lightbox');
+  document.getElementById('lightbox-img').src=src;
+  lb.classList.add('open');
+  document.body.style.overflow='hidden';
+}
+function closeLightbox(){
+  var lb=document.getElementById('lightbox');
+  lb.classList.remove('open');
+  document.body.style.overflow='';
+}
+document.addEventListener('keydown',function(e){if(e.key==='Escape')closeLightbox()});
+
+// Make all content images clickable
+document.querySelectorAll('.content img').forEach(function(img){
+  img.addEventListener('click',function(){openLightbox(this.src)});
+  img.title='Klik untuk memperbesar';
+});
+
 function getTheme(){return localStorage.getItem('api-docs-theme')||'light'}
 function applyTheme(t){document.body.classList.toggle('dark',t==='dark');document.getElementById('themeBtn').textContent=t==='dark'?'☀️ Light':'🌙 Dark';localStorage.setItem('api-docs-theme',t)}
 function toggleTheme(){applyTheme(getTheme()==='dark'?'light':'dark')}
