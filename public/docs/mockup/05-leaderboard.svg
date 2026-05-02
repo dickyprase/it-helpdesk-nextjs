@@ -1,47 +1,47 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 460" fill="none" font-family="system-ui,sans-serif">
-  <rect width="800" height="460" fill="#fff" stroke="#e5e7eb"/>
+  <rect width="800" height="460" fill="#fff" stroke="#ddd"/>
   <text x="400" y="30" text-anchor="middle" font-size="14" font-weight="700" fill="#111">Wireframe: Leaderboard Staff</text>
   <!-- Navbar -->
-  <rect x="0" y="45" width="800" height="40" fill="#f9fafb" stroke="#e5e7eb"/>
-  <text x="48" y="70" font-size="12" font-weight="600" fill="#374151">IT Helpdesk</text>
+  <rect x="0" y="45" width="800" height="40" fill="#f5f5f5" stroke="#ddd"/>
+  <text x="48" y="70" font-size="12" font-weight="600" fill="#333">IT Helpdesk</text>
   <!-- Header -->
-  <rect x="30" y="100" width="36" height="36" rx="8" fill="#e5e7eb"/>
+  <rect x="30" y="100" width="36" height="36" rx="8" fill="#ddd"/>
   <text x="76" y="118" font-size="18" font-weight="700" fill="#111">Leaderboard</text>
-  <text x="76" y="134" font-size="10" fill="#9ca3af">Periode April 2026</text>
+  <text x="76" y="134" font-size="10" fill="#999">Periode April 2026</text>
   <!-- Filter -->
-  <rect x="30" y="150" width="740" height="46" rx="10" fill="#f9fafb" stroke="#e5e7eb"/>
-  <rect x="44" y="160" width="80" height="26" rx="6" fill="#374151"/>
+  <rect x="30" y="150" width="740" height="46" rx="10" fill="#f5f5f5" stroke="#ddd"/>
+  <rect x="44" y="160" width="80" height="26" rx="6" fill="#333"/>
   <text x="84" y="177" text-anchor="middle" font-size="10" fill="#fff" font-weight="600">Bulanan</text>
-  <rect x="130" y="160" width="80" height="26" rx="6" fill="#fff" stroke="#d1d5db"/>
-  <text x="170" y="177" text-anchor="middle" font-size="10" fill="#9ca3af">Tahunan</text>
-  <rect x="230" y="160" width="100" height="26" rx="6" fill="#fff" stroke="#d1d5db"/>
-  <text x="242" y="177" font-size="10" fill="#9ca3af">📅 April ▼</text>
-  <rect x="340" y="160" width="80" height="26" rx="6" fill="#fff" stroke="#d1d5db"/>
-  <text x="352" y="177" font-size="10" fill="#9ca3af">2026 ▼</text>
+  <rect x="130" y="160" width="80" height="26" rx="6" fill="#fff" stroke="#bbb"/>
+  <text x="170" y="177" text-anchor="middle" font-size="10" fill="#999">Tahunan</text>
+  <rect x="230" y="160" width="100" height="26" rx="6" fill="#fff" stroke="#bbb"/>
+  <text x="242" y="177" font-size="10" fill="#999">📅 April ▼</text>
+  <rect x="340" y="160" width="80" height="26" rx="6" fill="#fff" stroke="#bbb"/>
+  <text x="352" y="177" font-size="10" fill="#999">2026 ▼</text>
   <!-- Ranking Cards -->
-  <rect x="30" y="210" width="740" height="60" rx="10" fill="#fff" stroke="#e5e7eb" stroke-width="1.5"/>
-  <circle cx="60" cy="240" r="16" fill="#fbbf24"/>
-  <text x="60" y="244" text-anchor="middle" font-size="11" font-weight="700" fill="#fff">👑</text>
-  <text x="90" y="234" font-size="12" font-weight="600" fill="#374151">IT Support Staff</text>
-  <text x="90" y="250" font-size="10" fill="#9ca3af">staff@helpdesk.local</text>
-  <text x="680" y="234" font-size="9" fill="#9ca3af">Poin</text>
-  <text x="680" y="252" font-size="18" font-weight="800" fill="#f59e0b">50</text>
-  <text x="600" y="234" font-size="9" fill="#9ca3af">Tiket</text>
-  <text x="600" y="250" font-size="12" font-weight="600" fill="#374151">3</text>
+  <rect x="30" y="210" width="740" height="60" rx="10" fill="#fff" stroke="#ddd" stroke-width="1.5"/>
+  <circle cx="60" cy="240" r="16" fill="#333"/>
+  <text x="60" y="244" text-anchor="middle" font-size="11" font-weight="700" fill="#fff">1</text>
+  <text x="90" y="234" font-size="12" font-weight="600" fill="#333">Staff 1</text>
+  <text x="90" y="250" font-size="10" fill="#999">staff1@mail.com</text>
+  <text x="680" y="234" font-size="9" fill="#999">Poin</text>
+  <text x="680" y="252" font-size="18" font-weight="800" fill="#111">50</text>
+  <text x="600" y="234" font-size="9" fill="#999">Tiket</text>
+  <text x="600" y="250" font-size="12" font-weight="600" fill="#333">3</text>
 
-  <rect x="30" y="280" width="740" height="60" rx="10" fill="#fff" stroke="#e5e7eb"/>
-  <circle cx="60" cy="310" r="16" fill="#d1d5db"/>
-  <text x="60" y="314" text-anchor="middle" font-size="11" font-weight="700" fill="#fff">🥈</text>
-  <text x="90" y="304" font-size="12" font-weight="600" fill="#374151">Staff 2</text>
-  <text x="90" y="320" font-size="10" fill="#9ca3af">staff2@helpdesk.local</text>
-  <text x="680" y="312" font-size="18" font-weight="800" fill="#9ca3af">20</text>
+  <rect x="30" y="280" width="740" height="60" rx="10" fill="#fff" stroke="#ddd"/>
+  <circle cx="60" cy="310" r="16" fill="#777"/>
+  <text x="60" y="314" text-anchor="middle" font-size="11" font-weight="700" fill="#fff">2</text>
+  <text x="90" y="304" font-size="12" font-weight="600" fill="#333">Staff 2</text>
+  <text x="90" y="320" font-size="10" fill="#999">staff2@mail.com</text>
+  <text x="680" y="312" font-size="18" font-weight="800" fill="#111">20</text>
 
-  <rect x="30" y="350" width="740" height="60" rx="10" fill="#fff" stroke="#e5e7eb"/>
-  <circle cx="60" cy="380" r="16" fill="#d97706"/>
-  <text x="60" y="384" text-anchor="middle" font-size="11" font-weight="700" fill="#fff">🥉</text>
-  <text x="90" y="374" font-size="12" font-weight="600" fill="#374151">Staff 3</text>
-  <text x="90" y="390" font-size="10" fill="#9ca3af">staff3@helpdesk.local</text>
-  <text x="680" y="382" font-size="18" font-weight="800" fill="#9ca3af">10</text>
+  <rect x="30" y="350" width="740" height="60" rx="10" fill="#fff" stroke="#ddd"/>
+  <circle cx="60" cy="380" r="16" fill="#bbb"/>
+  <text x="60" y="384" text-anchor="middle" font-size="11" font-weight="700" fill="#fff">3</text>
+  <text x="90" y="374" font-size="12" font-weight="600" fill="#333">Staff 3</text>
+  <text x="90" y="390" font-size="10" fill="#999">staff3@mail.com</text>
+  <text x="680" y="382" font-size="18" font-weight="800" fill="#111">10</text>
   <!-- Annotation -->
-  <text x="30" y="440" font-size="9" fill="#d1d5db" font-style="italic">Poin = 10 × difficulty_level. Diberikan saat Manager menutup tiket.</text>
+  <text x="30" y="440" font-size="9" fill="#bbb" font-style="italic">Poin = 10 × difficulty_level. Diberikan saat Manager menutup tiket.</text>
 </svg>
