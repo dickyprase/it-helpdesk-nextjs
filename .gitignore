@@ -1,36 +1,55 @@
+# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+
 # dependencies
-node_modules/
+/node_modules
+/.pnp
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/versions
+
+# testing
+/coverage
 
 # next.js
-nextjs/.next/
-nextjs/out/
+/.next/
+/out/
 
-# env files
-.env
-.env.*
-!.env.example
-
-# build
+# production
 /build
-/dist
 
 # misc
 .DS_Store
 *.pem
-*.log
+
+# debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# env files (can opt-in for committing if needed)
+.env*
+
+# vercel
+.vercel
 
 # typescript
 *.tsbuildinfo
 next-env.d.ts
 
-# prisma generated
-nextjs/src/generated/
+/src/generated/prisma
 
-# uploads (runtime)
-nextjs/public/uploads/
-
-# WhatsApp auth session
-nextjs/.wa-auth/
+# uploads (runtime user files)
+/public/uploads
 
 # editor
 .openclaude/
+
+# WhatsApp auth session
+.wa-auth/
+
+# REST API
+rest-api/node_modules/
