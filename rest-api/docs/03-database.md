@@ -1,5 +1,18 @@
 # Database & ERD
 
+## Download Schema
+
+📥 **[Download schema.sql](/docs/downloads/schema.sql)** — Import langsung ke phpMyAdmin / MySQL / MariaDB
+
+> **Cara import di phpMyAdmin:**
+> 1. Buat database baru (misal: `helpdesk`)
+> 2. Pilih database tersebut
+> 3. Klik tab **"Import"**
+> 4. Pilih file `schema.sql` → klik **"Go"**
+> 5. Semua tabel + data awal (kategori, template notifikasi) otomatis dibuat
+
+---
+
 ## Entity Relationship Diagram
 
 ![ERD IT Helpdesk](/docs/images/erd.svg)

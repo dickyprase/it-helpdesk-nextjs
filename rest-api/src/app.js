@@ -23,9 +23,10 @@ app.use(cors());
 app.use(express.json());
 app.use(morgan('dev'));
 
-// Serve docs static images
+// Serve docs static files (images + downloads)
 const path = require('path');
 app.use('/docs/images', express.static(path.join(__dirname, '..', 'docs', 'images')));
+app.use('/docs/downloads', express.static(path.join(__dirname, '..', 'docs', 'downloads')));
 
 // API Documentation (web)
 app.use('/docs', docsRoute);
