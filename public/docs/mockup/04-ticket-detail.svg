@@ -1,0 +1,59 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 520" fill="none" font-family="system-ui,sans-serif">
+  <rect width="800" height="520" fill="#fff" stroke="#e5e7eb"/>
+  <text x="400" y="30" text-anchor="middle" font-size="14" font-weight="700" fill="#111">Wireframe: Detail Tiket + Chat</text>
+  <!-- Left: Ticket Info -->
+  <rect x="20" y="50" width="460" height="450" rx="12" fill="#fafafa" stroke="#e5e7eb"/>
+  <text x="36" y="78" font-size="14" font-weight="700" fill="#374151">Detail Tiket</text>
+  <!-- Info rows -->
+  <rect x="36" y="92" width="16" height="16" rx="4" fill="#e5e7eb"/>
+  <text x="60" y="104" font-size="10" fill="#9ca3af">Kode</text>
+  <text x="120" y="104" font-size="10" font-weight="600" fill="#374151">TKT-MO9G0B44-LVE6</text>
+  <rect x="36" y="118" width="16" height="16" rx="4" fill="#e5e7eb"/>
+  <text x="60" y="130" font-size="10" fill="#9ca3af">Status</text>
+  <rect x="120" y="119" width="70" height="18" rx="9" fill="#dbeafe"/>
+  <text x="155" y="132" text-anchor="middle" font-size="9" font-weight="600" fill="#2563eb">IN_PROGRESS</text>
+  <rect x="36" y="144" width="16" height="16" rx="4" fill="#e5e7eb"/>
+  <text x="60" y="156" font-size="10" fill="#9ca3af">Kategori</text>
+  <text x="120" y="156" font-size="10" fill="#374151">Hardware</text>
+  <rect x="36" y="170" width="16" height="16" rx="4" fill="#e5e7eb"/>
+  <text x="60" y="182" font-size="10" fill="#9ca3af">Pembuat</text>
+  <text x="120" y="182" font-size="10" fill="#374151">dicky (USER)</text>
+  <rect x="36" y="196" width="16" height="16" rx="4" fill="#e5e7eb"/>
+  <text x="60" y="208" font-size="10" fill="#9ca3af">Staff</text>
+  <text x="120" y="208" font-size="10" fill="#374151">IT Support Staff</text>
+  <!-- Description -->
+  <text x="36" y="240" font-size="11" font-weight="600" fill="#374151">Deskripsi</text>
+  <rect x="36" y="248" width="428" height="60" rx="6" fill="#fff" stroke="#e5e7eb"/>
+  <text x="46" y="268" font-size="10" fill="#6b7280">Printer HP LaserJet di lantai 2 menampilkan</text>
+  <text x="46" y="282" font-size="10" fill="#6b7280">error code E-05. Sudah coba restart tapi tetap error.</text>
+  <!-- Action Buttons -->
+  <text x="36" y="332" font-size="11" font-weight="600" fill="#374151">Aksi (role-based)</text>
+  <rect x="36" y="342" width="100" height="30" rx="6" fill="#374151"/>
+  <text x="86" y="362" text-anchor="middle" font-size="10" fill="#fff">Resolve</text>
+  <rect x="146" y="342" width="100" height="30" rx="6" fill="#fff" stroke="#d1d5db"/>
+  <text x="196" y="362" text-anchor="middle" font-size="10" fill="#374151">Pending</text>
+  <rect x="256" y="342" width="100" height="30" rx="6" fill="#fff" stroke="#ef4444"/>
+  <text x="306" y="362" text-anchor="middle" font-size="10" fill="#ef4444">Lepas Tiket</text>
+  <text x="36" y="400" font-size="9" fill="#d1d5db" font-style="italic">Tombol muncul berdasarkan role + status tiket</text>
+
+  <!-- Right: Chat -->
+  <rect x="500" y="50" width="280" height="450" rx="12" fill="#fafafa" stroke="#e5e7eb"/>
+  <text x="516" y="78" font-size="14" font-weight="700" fill="#374151">💬 Live Chat</text>
+  <!-- Chat messages -->
+  <rect x="516" y="92" width="160" height="40" rx="10" fill="#e5e7eb"/>
+  <text x="526" y="108" font-size="9" font-weight="600" fill="#374151">dicky (USER)</text>
+  <text x="526" y="122" font-size="9" fill="#6b7280">Printer saya error E-05</text>
+  <rect x="596" y="142" width="168" height="40" rx="10" fill="#374151"/>
+  <text x="606" y="158" font-size="9" font-weight="600" fill="#fff">IT Support (STAFF)</text>
+  <text x="606" y="172" font-size="9" fill="#e5e7eb">Baik, saya cek sekarang</text>
+  <rect x="516" y="192" width="180" height="40" rx="10" fill="#e5e7eb"/>
+  <text x="526" y="208" font-size="9" font-weight="600" fill="#374151">dicky (USER)</text>
+  <text x="526" y="222" font-size="9" fill="#6b7280">Terima kasih, ditunggu ya</text>
+  <!-- Input -->
+  <rect x="516" y="460" width="200" height="28" rx="6" fill="#fff" stroke="#d1d5db"/>
+  <text x="526" y="478" font-size="10" fill="#9ca3af">Ketik pesan...</text>
+  <rect x="724" y="460" width="40" height="28" rx="6" fill="#374151"/>
+  <text x="744" y="478" text-anchor="middle" font-size="10" fill="#fff">▶</text>
+  <!-- Annotation -->
+  <text x="516" y="440" font-size="9" fill="#d1d5db" font-style="italic">Real-time via SSE (3s polling di PHP)</text>
+</svg>

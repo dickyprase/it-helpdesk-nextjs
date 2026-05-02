@@ -1,0 +1,63 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 440" fill="none" font-family="system-ui,sans-serif">
+  <rect width="800" height="440" fill="#fff" stroke="#e5e7eb"/>
+  <text x="400" y="30" text-anchor="middle" font-size="14" font-weight="700" fill="#111">Wireframe: Kelola User (Manager)</text>
+  <!-- Navbar -->
+  <rect x="0" y="45" width="800" height="40" fill="#f9fafb" stroke="#e5e7eb"/>
+  <text x="48" y="70" font-size="12" font-weight="600" fill="#374151">IT Helpdesk</text>
+  <!-- Header -->
+  <text x="30" y="115" font-size="18" font-weight="700" fill="#111">Kelola User</text>
+  <rect x="660" y="98" width="110" height="30" rx="6" fill="#374151"/>
+  <text x="715" y="118" text-anchor="middle" font-size="10" fill="#fff" font-weight="600">+ Tambah User</text>
+  <!-- User List -->
+  <rect x="30" y="135" width="740" height="290" rx="12" fill="#fff" stroke="#e5e7eb"/>
+  <!-- Table Header -->
+  <rect x="30" y="135" width="740" height="32" rx="12" fill="#f9fafb"/>
+  <text x="50" y="156" font-size="9" font-weight="700" fill="#9ca3af">AVATAR</text>
+  <text x="110" y="156" font-size="9" font-weight="700" fill="#9ca3af">NAMA</text>
+  <text x="280" y="156" font-size="9" font-weight="700" fill="#9ca3af">EMAIL</text>
+  <text x="470" y="156" font-size="9" font-weight="700" fill="#9ca3af">ROLE</text>
+  <text x="560" y="156" font-size="9" font-weight="700" fill="#9ca3af">STATUS</text>
+  <text x="660" y="156" font-size="9" font-weight="700" fill="#9ca3af">AKSI</text>
+  <!-- Row 1 -->
+  <circle cx="62" cy="190" r="14" fill="#8b5cf6"/>
+  <text x="62" y="194" text-anchor="middle" font-size="10" font-weight="700" fill="#fff">S</text>
+  <text x="110" y="188" font-size="11" font-weight="600" fill="#374151">Super Admin</text>
+  <rect x="110" y="192" width="50" height="14" rx="7" fill="#ede9fe"/>
+  <text x="135" y="203" text-anchor="middle" font-size="8" font-weight="600" fill="#7c3aed">MANAGER</text>
+  <text x="280" y="194" font-size="10" fill="#6b7280">admin@helpdesk.local</text>
+  <text x="470" y="194" font-size="10" fill="#374151">MANAGER</text>
+  <rect x="560" y="183" width="46" height="18" rx="9" fill="#dcfce7"/>
+  <text x="583" y="196" text-anchor="middle" font-size="8" font-weight="600" fill="#16a34a">Aktif</text>
+  <rect x="660" y="181" width="24" height="22" rx="4" fill="#fff" stroke="#d1d5db"/>
+  <text x="672" y="196" text-anchor="middle" font-size="10" fill="#6b7280">✏️</text>
+  <!-- Row 2 -->
+  <circle cx="62" cy="240" r="14" fill="#3b82f6"/>
+  <text x="62" y="244" text-anchor="middle" font-size="10" font-weight="700" fill="#fff">I</text>
+  <text x="110" y="238" font-size="11" font-weight="600" fill="#374151">IT Support Staff</text>
+  <rect x="110" y="242" width="40" height="14" rx="7" fill="#dbeafe"/>
+  <text x="130" y="253" text-anchor="middle" font-size="8" font-weight="600" fill="#2563eb">STAFF</text>
+  <text x="280" y="244" font-size="10" fill="#6b7280">staff@helpdesk.local</text>
+  <text x="470" y="244" font-size="10" fill="#374151">STAFF</text>
+  <rect x="560" y="233" width="46" height="18" rx="9" fill="#dcfce7"/>
+  <text x="583" y="246" text-anchor="middle" font-size="8" font-weight="600" fill="#16a34a">Aktif</text>
+  <rect x="660" y="231" width="24" height="22" rx="4" fill="#fff" stroke="#d1d5db"/>
+  <text x="672" y="246" text-anchor="middle" font-size="10" fill="#6b7280">✏️</text>
+  <rect x="690" y="231" width="24" height="22" rx="4" fill="#fff" stroke="#ef4444"/>
+  <text x="702" y="246" text-anchor="middle" font-size="10" fill="#ef4444">🚫</text>
+  <!-- Row 3 -->
+  <circle cx="62" cy="290" r="14" fill="#22c55e"/>
+  <text x="62" y="294" text-anchor="middle" font-size="10" font-weight="700" fill="#fff">D</text>
+  <text x="110" y="288" font-size="11" font-weight="600" fill="#374151">dicky</text>
+  <rect x="110" y="292" width="36" height="14" rx="7" fill="#dcfce7"/>
+  <text x="128" y="303" text-anchor="middle" font-size="8" font-weight="600" fill="#16a34a">USER</text>
+  <text x="280" y="294" font-size="10" fill="#6b7280">dicky@local.com</text>
+  <text x="470" y="294" font-size="10" fill="#374151">USER</text>
+  <rect x="560" y="283" width="60" height="18" rx="9" fill="#fee2e2"/>
+  <text x="590" y="296" text-anchor="middle" font-size="8" font-weight="600" fill="#ef4444">Nonaktif</text>
+  <rect x="660" y="281" width="24" height="22" rx="4" fill="#fff" stroke="#d1d5db"/>
+  <text x="672" y="296" text-anchor="middle" font-size="10" fill="#6b7280">✏️</text>
+  <rect x="690" y="281" width="24" height="22" rx="4" fill="#fff" stroke="#22c55e"/>
+  <text x="702" y="296" text-anchor="middle" font-size="10" fill="#22c55e">✅</text>
+  <!-- Annotation -->
+  <text x="30" y="430" font-size="9" fill="#d1d5db" font-style="italic">Manager bisa: tambah user, edit, toggle aktif/nonaktif. Tidak bisa edit diri sendiri.</text>
+</svg>
