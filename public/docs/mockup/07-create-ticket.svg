@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 520" fill="none" font-family="system-ui,sans-serif">
+  <rect width="800" height="520" fill="#fff" stroke="#ddd"/>
+  <text x="400" y="30" text-anchor="middle" font-size="14" font-weight="700" fill="#111">Wireframe: Form Buat Tiket Baru (USER)</text>
+  <!-- Navbar -->
+  <rect x="0" y="45" width="800" height="40" fill="#f5f5f5" stroke="#ddd"/>
+  <rect x="16" y="55" width="24" height="20" rx="4" fill="#ddd"/>
+  <text x="48" y="70" font-size="12" font-weight="600" fill="#333">IT Helpdesk</text>
+  <text x="700" y="70" font-size="10" fill="#999">User 1 (USER)</text>
+  <!-- Back link -->
+  <text x="30" y="108" font-size="10" fill="#999">← Kembali ke Dashboard</text>
+  <!-- Page Header -->
+  <rect x="30" y="120" width="36" height="36" rx="8" fill="#ddd"/>
+  <text x="76" y="140" font-size="18" font-weight="700" fill="#111">Buat Tiket Baru</text>
+  <text x="76" y="156" font-size="10" fill="#999">Isi form di bawah untuk membuat tiket support</text>
+  <!-- Form Card -->
+  <rect x="30" y="175" width="540" height="320" rx="12" fill="#fff" stroke="#ddd" stroke-width="1.5"/>
+  <!-- Title field -->
+  <text x="50" y="205" font-size="11" font-weight="600" fill="#333">Judul Kendala</text>
+  <rect x="50" y="212" width="500" height="36" rx="6" fill="#fff" stroke="#ddd"/>
+  <text x="62" y="235" font-size="11" fill="#999">Contoh: Printer lantai 2 error</text>
+  <!-- Category dropdown -->
+  <text x="50" y="272" font-size="11" font-weight="600" fill="#333">Kategori</text>
+  <rect x="50" y="279" width="500" height="36" rx="6" fill="#fff" stroke="#ddd"/>
+  <text x="62" y="302" font-size="11" fill="#999">-- Pilih Kategori --</text>
+  <text x="530" y="302" font-size="11" fill="#999">▼</text>
+  <!-- Annotation: dropdown options -->
+  <line x1="560" y1="297" x2="610" y2="297" stroke="#bbb" stroke-dasharray="4"/>
+  <text x="615" y="290" font-size="9" fill="#999">Dropdown dari DB:</text>
+  <text x="615" y="302" font-size="9" fill="#999">Account, Hardware,</text>
+  <text x="615" y="314" font-size="9" fill="#999">Network, Software, Other</text>
+  <!-- Description textarea -->
+  <text x="50" y="339" font-size="11" font-weight="600" fill="#333">Deskripsi Kendala</text>
+  <rect x="50" y="346" width="500" height="90" rx="6" fill="#fff" stroke="#ddd"/>
+  <text x="62" y="370" font-size="11" fill="#999">Tulis kendala disini...</text>
+  <text x="62" y="386" font-size="9" fill="#bbb">(min 10 karakter, max 5000 karakter)</text>
+  <!-- Submit button -->
+  <rect x="410" y="450" width="140" height="36" rx="8" fill="#333"/>
+  <text x="480" y="473" text-anchor="middle" font-size="12" font-weight="600" fill="#fff">Kirim Kendala</text>
+  <!-- Annotations -->
+  <line x1="410" y1="468" x2="610" y2="490" stroke="#bbb" stroke-dasharray="4"/>
+  <text x="615" y="490" font-size="9" fill="#999">POST → createTicketAction</text>
+  <text x="615" y="502" font-size="9" fill="#999">Auto-generate kode: TKT-XXXXX</text>
+</svg>

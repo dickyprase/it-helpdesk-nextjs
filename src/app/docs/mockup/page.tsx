@@ -6,11 +6,16 @@ import { X, Download } from 'lucide-react';
 
 const MOCKUPS = [
   { file: '01-login.svg', title: 'Halaman Login', desc: 'Form login dengan email dan password. Redirect berdasarkan role setelah berhasil login.' },
+  { file: '08-register.svg', title: 'Halaman Register', desc: 'Form registrasi user baru: nama, email, phone (opsional), password, konfirmasi. Role otomatis USER.' },
   { file: '02-dashboard.svg', title: 'Dashboard', desc: 'Hub navigasi utama dengan card menu. Card tertentu hanya muncul untuk role MANAGER (dashed border).' },
   { file: '03-ticket-list.svg', title: 'Daftar Tiket', desc: 'List tiket dengan filter status, kategori, dan search. Setiap tiket menampilkan kode, judul, status badge, dan staff.' },
+  { file: '07-create-ticket.svg', title: 'Form Buat Tiket', desc: 'Form pembuatan tiket: judul, dropdown kategori (dari database), deskripsi. Kode tiket auto-generated.' },
   { file: '04-ticket-detail.svg', title: 'Detail Tiket + Chat', desc: 'Layout 2 kolom: kiri = info tiket + action buttons (role-based), kanan = live chat real-time.' },
-  { file: '05-leaderboard.svg', title: 'Leaderboard Staff', desc: 'Ranking staff berdasarkan poin. Filter bulanan/tahunan. Badge emas/perak/perunggu untuk top 3.' },
+  { file: '11-chat-mobile.svg', title: 'Floating Chat (Desktop + Mobile)', desc: 'Desktop: floating panel 400px. Mobile: fullscreen. Bubble button tersembunyi saat chat terbuka di mobile.' },
+  { file: '05-leaderboard.svg', title: 'Leaderboard Staff', desc: 'Ranking staff berdasarkan poin. Filter bulanan/tahunan. Badge untuk top 3.' },
   { file: '06-admin-users.svg', title: 'Kelola User (Manager)', desc: 'Tabel user dengan avatar, role badge, status aktif/nonaktif, dan tombol edit/toggle.' },
+  { file: '09-whatsapp-gateway.svg', title: 'WhatsApp Gateway (Manager)', desc: 'Koneksi WA (QR code, connect/disconnect), test pesan, dan CRUD template notifikasi.' },
+  { file: '10-profile.svg', title: 'Profil Saya', desc: 'Edit nama/email/phone + ganti password. Tersedia untuk semua role.' },
 ];
 
 export default function MockupPage() {

@@ -1,0 +1,58 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 520" fill="none" font-family="system-ui,sans-serif">
+  <rect width="800" height="520" fill="#fff" stroke="#ddd"/>
+  <text x="400" y="30" text-anchor="middle" font-size="14" font-weight="700" fill="#111">Wireframe: Profil Saya (Semua Role)</text>
+  <!-- Navbar -->
+  <rect x="0" y="45" width="800" height="40" fill="#f5f5f5" stroke="#ddd"/>
+  <text x="48" y="70" font-size="12" font-weight="600" fill="#333">IT Helpdesk</text>
+  <!-- Header -->
+  <rect x="30" y="100" width="36" height="36" rx="8" fill="#ddd"/>
+  <text x="76" y="120" font-size="18" font-weight="700" fill="#111">Profil Saya</text>
+  <text x="76" y="136" font-size="10" fill="#999">Kelola informasi akun dan keamanan Anda</text>
+
+  <!-- Account Info Card -->
+  <rect x="30" y="155" width="540" height="50" rx="10" fill="#f5f5f5" stroke="#ddd"/>
+  <rect x="46" y="167" width="50" height="20" rx="10" fill="#fff" stroke="#333"/>
+  <text x="71" y="181" text-anchor="middle" font-size="8" font-weight="600" fill="#333">STAFF</text>
+  <text x="110" y="181" font-size="10" fill="#777">Bergabung 21 April 2026</text>
+
+  <!-- Edit Profile Form -->
+  <rect x="30" y="218" width="540" height="200" rx="12" fill="#fff" stroke="#ddd" stroke-width="1.5"/>
+  <rect x="46" y="234" width="28" height="28" rx="6" fill="#ddd"/>
+  <text x="82" y="250" font-size="13" font-weight="700" fill="#333">Edit Profil</text>
+  <text x="82" y="264" font-size="9" fill="#999">Perbarui nama, email, dan nomor WhatsApp</text>
+  <!-- Name -->
+  <text x="46" y="292" font-size="10" fill="#777">Nama Lengkap</text>
+  <rect x="46" y="298" width="240" height="30" rx="6" fill="#fff" stroke="#ddd"/>
+  <text x="58" y="318" font-size="10" fill="#333">Staff 1</text>
+  <!-- Email -->
+  <text x="300" y="292" font-size="10" fill="#777">Email</text>
+  <rect x="300" y="298" width="254" height="30" rx="6" fill="#fff" stroke="#ddd"/>
+  <text x="312" y="318" font-size="10" fill="#333">staff1@mail.com</text>
+  <!-- Phone -->
+  <text x="46" y="352" font-size="10" fill="#777">No. WhatsApp (opsional)</text>
+  <rect x="46" y="358" width="240" height="30" rx="6" fill="#fff" stroke="#ddd"/>
+  <text x="58" y="378" font-size="10" fill="#999">08123456789</text>
+  <!-- Save button -->
+  <rect x="46" y="398" width="130" height="30" rx="6" fill="#333"/>
+  <text x="111" y="418" text-anchor="middle" font-size="10" fill="#fff" font-weight="600">Simpan Perubahan</text>
+
+  <!-- Change Password Form -->
+  <rect x="30" y="430" width="540" height="76" rx="12" fill="#fff" stroke="#ddd" stroke-width="1.5"/>
+  <rect x="46" y="446" width="28" height="28" rx="6" fill="#ddd"/>
+  <text x="82" y="462" font-size="13" font-weight="700" fill="#333">Ganti Password</text>
+  <!-- Password fields inline -->
+  <rect x="46" y="480" width="150" height="24" rx="6" fill="#fff" stroke="#ddd"/>
+  <text x="56" y="496" font-size="8" fill="#999">Password saat ini</text>
+  <rect x="206" y="480" width="150" height="24" rx="6" fill="#fff" stroke="#ddd"/>
+  <text x="216" y="496" font-size="8" fill="#999">Password baru</text>
+  <rect x="366" y="480" width="150" height="24" rx="6" fill="#fff" stroke="#ddd"/>
+  <text x="376" y="496" font-size="8" fill="#999">Konfirmasi baru</text>
+
+  <!-- Annotations -->
+  <line x1="580" y1="318" x2="620" y2="318" stroke="#bbb" stroke-dasharray="4"/>
+  <text x="625" y="312" font-size="9" fill="#999">Cek email duplikat</text>
+  <text x="625" y="324" font-size="9" fill="#999">sebelum update</text>
+  <line x1="580" y1="490" x2="620" y2="490" stroke="#bbb" stroke-dasharray="4"/>
+  <text x="625" y="484" font-size="9" fill="#999">Verifikasi password</text>
+  <text x="625" y="496" font-size="9" fill="#999">lama sebelum ganti</text>
+</svg>

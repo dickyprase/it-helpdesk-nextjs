@@ -1,0 +1,76 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600" fill="none" font-family="system-ui,sans-serif">
+  <rect width="800" height="600" fill="#fff" stroke="#ddd"/>
+  <text x="400" y="30" text-anchor="middle" font-size="14" font-weight="700" fill="#111">Wireframe: WhatsApp Gateway (MANAGER)</text>
+  <!-- Navbar -->
+  <rect x="0" y="45" width="800" height="40" fill="#f5f5f5" stroke="#ddd"/>
+  <text x="48" y="70" font-size="12" font-weight="600" fill="#333">IT Helpdesk</text>
+  <text x="680" y="70" font-size="10" fill="#999">Manager 1</text>
+  <!-- Header -->
+  <rect x="30" y="100" width="36" height="36" rx="8" fill="#ddd"/>
+  <text x="76" y="120" font-size="18" font-weight="700" fill="#111">WhatsApp Gateway</text>
+  <text x="76" y="136" font-size="10" fill="#999">Kelola koneksi WhatsApp dan template notifikasi</text>
+
+  <!-- Section 1: Koneksi -->
+  <rect x="30" y="155" width="740" height="200" rx="12" fill="#fff" stroke="#ddd" stroke-width="1.5"/>
+  <rect x="46" y="171" width="28" height="28" rx="6" fill="#ddd"/>
+  <text x="82" y="186" font-size="13" font-weight="700" fill="#333">Koneksi WhatsApp</text>
+  <text x="82" y="200" font-size="10" fill="#999">Status: disconnected</text>
+  <!-- Status indicator -->
+  <rect x="46" y="218" width="708" height="40" rx="8" fill="#f5f5f5" stroke="#ddd"/>
+  <circle cx="66" cy="238" r="5" fill="#333"/>
+  <text x="80" y="242" font-size="11" font-weight="600" fill="#333">Terputus</text>
+  <!-- QR Code area -->
+  <rect x="46" y="268" width="120" height="120" rx="8" fill="#f5f5f5" stroke="#ddd" stroke-dasharray="6"/>
+  <text x="106" y="328" text-anchor="middle" font-size="9" fill="#999">QR Code</text>
+  <text x="106" y="342" text-anchor="middle" font-size="9" fill="#999">muncul disini</text>
+  <!-- Buttons -->
+  <rect x="186" y="268" width="100" height="32" rx="6" fill="#333"/>
+  <text x="236" y="289" text-anchor="middle" font-size="10" fill="#fff" font-weight="600">Hubungkan</text>
+  <rect x="296" y="268" width="100" height="32" rx="6" fill="#fff" stroke="#333"/>
+  <text x="346" y="289" text-anchor="middle" font-size="10" fill="#333" font-weight="600">Putuskan</text>
+  <rect x="406" y="268" width="100" height="32" rx="6" fill="#fff" stroke="#333" stroke-dasharray="4"/>
+  <text x="456" y="289" text-anchor="middle" font-size="10" fill="#333">Logout WA</text>
+  <!-- Toggle -->
+  <rect x="186" y="312" width="140" height="32" rx="6" fill="#f5f5f5" stroke="#ddd"/>
+  <text x="256" y="333" text-anchor="middle" font-size="10" fill="#333">Notifikasi: Aktif</text>
+  <!-- Annotations -->
+  <line x1="516" y1="280" x2="570" y2="280" stroke="#bbb" stroke-dasharray="4"/>
+  <text x="575" y="274" font-size="9" fill="#999">Hubungkan: trigger QR</text>
+  <text x="575" y="286" font-size="9" fill="#999">Putuskan: keep session</text>
+  <text x="575" y="298" font-size="9" fill="#999">Logout: clear session</text>
+
+  <!-- Section 2: Test Pesan -->
+  <rect x="30" y="365" width="360" height="110" rx="12" fill="#fff" stroke="#ddd" stroke-width="1.5"/>
+  <rect x="46" y="381" width="28" height="28" rx="6" fill="#ddd"/>
+  <text x="82" y="396" font-size="13" font-weight="700" fill="#333">Test Pesan</text>
+  <!-- Phone input -->
+  <rect x="46" y="416" width="160" height="28" rx="6" fill="#fff" stroke="#ddd"/>
+  <text x="56" y="434" font-size="9" fill="#999">08123456789</text>
+  <!-- Message input -->
+  <rect x="216" y="416" width="120" height="28" rx="6" fill="#fff" stroke="#ddd"/>
+  <text x="226" y="434" font-size="9" fill="#999">Pesan test...</text>
+  <!-- Send button -->
+  <rect x="346" y="416" width="28" height="28" rx="6" fill="#333"/>
+  <text x="360" y="435" text-anchor="middle" font-size="12" fill="#fff">▶</text>
+
+  <!-- Section 3: Template -->
+  <rect x="400" y="365" width="370" height="220" rx="12" fill="#fff" stroke="#ddd" stroke-width="1.5"/>
+  <rect x="416" y="381" width="28" height="28" rx="6" fill="#ddd"/>
+  <text x="452" y="396" font-size="13" font-weight="700" fill="#333">Template Notifikasi</text>
+  <!-- Template list -->
+  <rect x="416" y="416" width="338" height="28" rx="6" fill="#f5f5f5" stroke="#ddd"/>
+  <text x="426" y="434" font-size="9" fill="#333" font-weight="600">ticket_created</text>
+  <text x="620" y="434" font-size="9" fill="#999">[nama-user] [id-ticket]</text>
+  <rect x="416" y="450" width="338" height="28" rx="6" fill="#fff" stroke="#ddd"/>
+  <text x="426" y="468" font-size="9" fill="#333" font-weight="600">ticket_assigned</text>
+  <text x="620" y="468" font-size="9" fill="#999">[nama-staff] [id-ticket]</text>
+  <rect x="416" y="484" width="338" height="28" rx="6" fill="#f5f5f5" stroke="#ddd"/>
+  <text x="426" y="502" font-size="9" fill="#333" font-weight="600">ticket_resolved</text>
+  <text x="620" y="502" font-size="9" fill="#999">[nama-staff] [kategori]</text>
+  <rect x="416" y="518" width="338" height="28" rx="6" fill="#fff" stroke="#ddd"/>
+  <text x="426" y="536" font-size="9" fill="#333" font-weight="600">ticket_closed</text>
+  <text x="620" y="536" font-size="9" fill="#999">[status-akhir]</text>
+  <!-- Add button -->
+  <rect x="416" y="554" width="100" height="24" rx="6" fill="#333"/>
+  <text x="466" y="570" text-anchor="middle" font-size="9" fill="#fff" font-weight="600">+ Tambah</text>
+</svg>
