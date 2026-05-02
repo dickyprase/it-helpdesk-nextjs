@@ -383,13 +383,22 @@ if (process.env.NODE_ENV !== 'production') {
 
 // Auto-reconnect on startup if a saved session exists.
 // The flag prevents re-running on every hot-reload in dev.
-if (!globalForWA.waAutoReconnectDone) {
+// Skip during build (no runtime available).
+if (typeof globalForWA.waAutoReconnectDone === 'undefined') {
+  globalForWA.waAutoReconnectDone = false;
+}
+
+if (!globalForWA.waAutoReconnectDone && typeof process !== 'undefined' && process.env.NEXT_PHASE !== 'phase-production-build') {
   globalForWA.waAutoReconnectDone = true;
 
-  if (checkSessionExists() && waService.getStatus() === 'disconnected') {
-    console.log('[WA] Found saved session. Auto-reconnecting...');
-    waService.connect().catch((err) => {
-      console.error('[WA] Auto-reconnect failed:', err);
-    });
+  try {
+    if (checkSessionExists() && waService.getStatus() === 'disconnected') {
+      console.log('[WA] Found saved session. Auto-reconnecting...');
+      waService.connect().catch((err) => {
+        console.error('[WA] Auto-reconnect failed:', err);
+      });
+    }
+  } catch {
+    // Ignore errors during build/static generation
   }
 }
