@@ -225,8 +225,8 @@ export default async function TicketDetailPage({ params }: { params: Promise<{ i
                 </div>
               </div>
 
-              {/* Level Kesulitan (hanya untuk Staff & Manager) */}
-              {session.role !== 'USER' && (
+              {/* Level Kesulitan (hanya untuk Manager) */}
+              {session.role === 'MANAGER' && (
                 <div className="flex items-start gap-3">
                   <div className="w-9 h-9 rounded-lg bg-amber-500/10 flex items-center justify-center shrink-0">
                     <Gauge className="w-4 h-4 text-amber-400" />

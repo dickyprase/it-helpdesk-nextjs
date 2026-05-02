@@ -310,9 +310,9 @@ export default async function TicketsPage({
                       </div>
                     </div>
 
-                    {/* Right: Difficulty (staff/manager only) + Arrow */}
+                    {/* Right: Difficulty (manager only) + Arrow */}
                     <div className="flex items-center gap-4 shrink-0 sm:flex-col sm:items-end sm:gap-2">
-                      {session.role !== 'USER' && (
+                      {session.role === 'MANAGER' && (
                         <div className="flex items-center gap-1.5">
                           <span className="text-[11px] text-theme-text-muted">Kesulitan</span>
                           <DifficultyDots level={ticket.difficulty_level} />
