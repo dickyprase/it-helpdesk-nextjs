@@ -1,15 +1,21 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
-const publicPaths = ['/login', '/register', '/docs'];
+// Paths yang bisa diakses tanpa login
+const authPaths = ['/login', '/register']; // redirect ke dashboard jika sudah login
+const openPaths = ['/docs'];               // selalu bisa diakses, tidak redirect
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const sessionCookie = request.cookies.get('helpdesk_session');
 
-  // Allow public paths
-  if (publicPaths.some((p) => pathname.startsWith(p))) {
-    // If logged in, redirect away from login/register
+  // /docs — selalu bisa diakses, tidak pernah redirect
+  if (openPaths.some((p) => pathname.startsWith(p))) {
+    return NextResponse.next();
+  }
+
+  // /login, /register — redirect ke dashboard jika sudah login
+  if (authPaths.some((p) => pathname.startsWith(p))) {
     if (sessionCookie) {
       return NextResponse.redirect(new URL('/dashboard', request.url));
     }
@@ -25,7 +31,7 @@ export function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // Protect all other routes
+  // Protect all other routes — redirect ke login jika belum login
   if (!sessionCookie) {
     const loginUrl = new URL('/login', request.url);
     loginUrl.searchParams.set('callbackUrl', pathname);
