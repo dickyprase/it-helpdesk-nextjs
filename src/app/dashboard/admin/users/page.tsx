@@ -31,7 +31,7 @@ export default async function UsersAdminPage() {
 
   const users = await getUsers();
 
-  const serializedUsers = users.map((u) => ({
+  const serializedUsers = users.map((u: any) => ({
     ...u,
     created_at: u.created_at.toISOString(),
   }));
