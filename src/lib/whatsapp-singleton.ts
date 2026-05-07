@@ -258,15 +258,19 @@ class WhatsAppService {
     const jid = msg.key.remoteJid;
     if (!jid) return;
 
+    // replyJid: use original remoteJid for sending replies (could be LID or s.whatsapp.net)
+    // For verification, use the resolved s.whatsapp.net JID
+    const replyJid = msg._originalJid || jid;
+
     const body = this.extractMessageBody(msg).trim();
     if (!body) return;
 
-    console.log(`[WA Bot] Message from ${jid}: ${body.substring(0, 100)}`);
+    console.log(`[WA Bot] Message from ${jid} (reply to: ${replyJid}): ${body.substring(0, 100)}`);
 
     // 1. Verify user
     const user = await this.verifyUser(jid);
     if (!user) {
-      await this.socket.sendMessage(jid, {
+      await this.socket.sendMessage(replyJid, {
         text: '❌ *Nomor Tidak Terdaftar*\n\nMaaf, nomor WhatsApp Anda belum terdaftar di sistem IT Helpdesk.\n\nSilakan masukkan nomor WA Anda di halaman *Profil* pada aplikasi IT Helpdesk terlebih dahulu.',
       });
       return;
@@ -277,7 +281,7 @@ class WhatsAppService {
     // 2. Global commands (always work regardless of state)
     if (cmd === 'menu' || cmd === 'start' || cmd === 'hi' || cmd === 'halo' || cmd === 'help' || cmd === 'batal') {
       this.conversations.delete(jid);
-      await this.sendMainMenu(jid, user.name);
+      await this.sendMainMenu(replyJid, user.name);
       return;
     }
 
@@ -290,7 +294,7 @@ class WhatsAppService {
         userName: user.name,
       });
       this.setConvTimeout(jid);
-      await this.socket.sendMessage(jid, {
+      await this.socket.sendMessage(replyJid, {
         text: '📝 *Buat Tiket Baru*\n━━━━━━━━━━━━━━━━━━━━━\n\nSilakan tulis *judul kendala* Anda:\n\n_(Contoh: Printer lantai 2 error)_',
       });
       return;
@@ -304,7 +308,7 @@ class WhatsAppService {
         userName: user.name,
       });
       this.setConvTimeout(jid);
-      await this.socket.sendMessage(jid, {
+      await this.socket.sendMessage(replyJid, {
         text: '📋 *Cek Status Tiket*\n━━━━━━━━━━━━━━━━━━━━━\n\nMasukkan *kode tiket* Anda:\n\n_(Contoh: TKT-MO9G0B44-LVE6)_\n\nKetik *menu* untuk kembali.',
       });
       return;
@@ -325,7 +329,7 @@ class WhatsAppService {
             state.step = 'waiting_description';
             this.setConvTimeout(jid);
 
-            await this.socket.sendMessage(jid, {
+            await this.socket.sendMessage(replyJid, {
               text: `✅ Kategori: *${category.name}*\n\nSekarang tulis *deskripsi lengkap* kendala Anda:\n\n_(Minimal 10 karakter. Jelaskan masalah secara detail agar staff bisa membantu dengan cepat.)_`,
             });
             return;
@@ -344,7 +348,7 @@ class WhatsAppService {
         userName: user.name,
       });
       this.setConvTimeout(jid);
-      await this.socket.sendMessage(jid, {
+      await this.socket.sendMessage(replyJid, {
         text: '📝 *Buat Tiket Baru*\n━━━━━━━━━━━━━━━━━━━━━\n\nSilakan tulis *judul kendala* Anda:\n\n_(Contoh: Printer lantai 2 error)_',
       });
       return;
@@ -359,7 +363,7 @@ class WhatsAppService {
         userName: user.name,
       });
       this.setConvTimeout(jid);
-      await this.socket.sendMessage(jid, {
+      await this.socket.sendMessage(replyJid, {
         text: '📋 *Cek Status Tiket*\n━━━━━━━━━━━━━━━━━━━━━\n\nMasukkan *kode tiket* Anda:\n\n_(Contoh: TKT-MO9G0B44-LVE6)_',
       });
       return;
@@ -371,13 +375,13 @@ class WhatsAppService {
       switch (state.step) {
         case 'waiting_title': {
           if (body.length < 5) {
-            await this.socket.sendMessage(jid, {
+            await this.socket.sendMessage(replyJid, {
               text: '⚠️ Judul terlalu pendek. Minimal 5 karakter.\n\nSilakan tulis ulang judul kendala:',
             });
             return;
           }
           if (body.length > 200) {
-            await this.socket.sendMessage(jid, {
+            await this.socket.sendMessage(replyJid, {
               text: '⚠️ Judul terlalu panjang. Maksimal 200 karakter.\n\nSilakan tulis ulang judul kendala:',
             });
             return;
@@ -395,13 +399,13 @@ class WhatsAppService {
               text: cat.name,
             }));
 
-            await this.sendBotButtons(jid, {
+            await this.sendBotButtons(replyJid, {
               text: `✅ Judul: *${body}*\n\nSekarang pilih *kategori* tiket:`,
               footer: 'Pilih kategori yang sesuai dengan kendala Anda',
               buttons: catButtons,
             });
           } catch {
-            await this.socket.sendMessage(jid, {
+            await this.socket.sendMessage(replyJid, {
               text: '❌ Gagal memuat kategori. Silakan coba lagi nanti.\n\nKetik *menu* untuk kembali.',
             });
             this.conversations.delete(jid);
@@ -422,16 +426,16 @@ class WhatsAppService {
               state.step = 'waiting_description';
               this.setConvTimeout(jid);
 
-              await this.socket.sendMessage(jid, {
+              await this.socket.sendMessage(replyJid, {
                 text: `✅ Kategori: *${match.name}*\n\nSekarang tulis *deskripsi lengkap* kendala Anda:\n\n_(Minimal 10 karakter)_`,
               });
             } else {
-              await this.socket.sendMessage(jid, {
+              await this.socket.sendMessage(replyJid, {
                 text: '⚠️ Kategori tidak valid. Silakan pilih dari tombol di atas, atau ketik nama kategori:\n\n• Account\n• Hardware\n• Network\n• Software\n• Other',
               });
             }
           } catch {
-            await this.socket.sendMessage(jid, { text: '❌ Error. Ketik *menu* untuk kembali.' });
+            await this.socket.sendMessage(replyJid, { text: '❌ Error. Ketik *menu* untuk kembali.' });
             this.conversations.delete(jid);
           }
           return;
@@ -439,7 +443,7 @@ class WhatsAppService {
 
         case 'waiting_description': {
           if (body.length < 10) {
-            await this.socket.sendMessage(jid, {
+            await this.socket.sendMessage(replyJid, {
               text: '⚠️ Deskripsi terlalu pendek. Minimal 10 karakter.\n\nSilakan tulis ulang deskripsi kendala:',
             });
             return;
@@ -462,7 +466,7 @@ class WhatsAppService {
 
             this.conversations.delete(jid);
 
-            await this.sendBotButtons(jid, {
+            await this.sendBotButtons(replyJid, {
               text: `✅ *Tiket Berhasil Dibuat!*\n━━━━━━━━━━━━━━━━━━━━━\n\n📋 Kode: *${ticket.code}*\n📝 Judul: ${state.data.title}\n📂 Kategori: ${state.data.category_name}\n📊 Status: *OPEN*\n\nStaff IT akan segera menangani tiket Anda. Anda akan mendapat notifikasi WhatsApp saat ada update.\n━━━━━━━━━━━━━━━━━━━━━`,
               footer: '🤖 IT Helpdesk Bot',
               buttons: [
@@ -480,7 +484,7 @@ class WhatsAppService {
             } catch { /* ignore */ }
           } catch (err) {
             console.error('[WA Bot] Create ticket error:', err);
-            await this.socket.sendMessage(jid, {
+            await this.socket.sendMessage(replyJid, {
               text: '❌ Gagal membuat tiket. Silakan coba lagi nanti.\n\nKetik *menu* untuk kembali.',
             });
             this.conversations.delete(jid);
@@ -505,7 +509,7 @@ class WhatsAppService {
             this.conversations.delete(jid);
 
             if (!ticket) {
-              await this.sendBotButtons(jid, {
+              await this.sendBotButtons(replyJid, {
                 text: '❌ *Tiket Tidak Ditemukan*\n\nPastikan kode tiket benar dan tiket tersebut milik Anda.\n\n_(Kode tiket contoh: TKT-MO9G0B44-LVE6)_',
                 footer: '🤖 IT Helpdesk Bot',
                 buttons: [
@@ -547,7 +551,7 @@ class WhatsAppService {
 
             detail += `\n━━━━━━━━━━━━━━━━━━━━━`;
 
-            await this.sendBotButtons(jid, {
+            await this.sendBotButtons(replyJid, {
               text: detail,
               footer: '🤖 IT Helpdesk Bot',
               buttons: [
@@ -557,7 +561,7 @@ class WhatsAppService {
             });
           } catch (err) {
             console.error('[WA Bot] Check status error:', err);
-            await this.socket.sendMessage(jid, {
+            await this.socket.sendMessage(replyJid, {
               text: '❌ Gagal mengecek status. Silakan coba lagi.\n\nKetik *menu* untuk kembali.',
             });
             this.conversations.delete(jid);
@@ -568,7 +572,7 @@ class WhatsAppService {
     }
 
     // 7. Default: show main menu
-    await this.sendMainMenu(jid, user.name);
+    await this.sendMainMenu(replyJid, user.name);
   }
 
   // ============================================================
@@ -679,16 +683,48 @@ class WhatsAppService {
 
           if (type === 'notify' && Array.isArray(messages)) {
             for (const msg of messages) {
+              // Log raw message key for debugging
+              console.log(`[WA Bot] RAW msg.key:`, JSON.stringify(msg.key));
+              console.log(`[WA Bot] RAW msg.message keys:`, msg.message ? Object.keys(msg.message) : 'null');
+
               // Skip own messages, status broadcasts, and group messages
               if (!msg.message) continue;
               if (msg.key.fromMe) continue;
               if (msg.key.remoteJid === 'status@broadcast') continue;
               if (msg.key.remoteJid?.endsWith('@g.us')) continue;
 
-              console.log(`[WA Bot] Processing message from: ${msg.key.remoteJid}`);
+              // Resolve LID to phone number JID
+              let jid = msg.key.remoteJid || '';
+              if (jid.endsWith('@lid')) {
+                const lidNumber = jid.replace('@lid', '');
+                console.log(`[WA Bot] LID detected: ${lidNumber}, resolving to phone number...`);
+
+                // Read LID reverse mapping from auth state
+                try {
+                  const mappingFile = path.join(this.authDir, `lid-mapping-${lidNumber}_reverse.json`);
+                  if (fs.existsSync(mappingFile)) {
+                    const phoneNumber = JSON.parse(fs.readFileSync(mappingFile, 'utf-8'));
+                    if (phoneNumber) {
+                      jid = phoneNumber + '@s.whatsapp.net';
+                      console.log(`[WA Bot] LID resolved: ${lidNumber} → ${phoneNumber}`);
+                    }
+                  } else {
+                    console.log(`[WA Bot] No reverse mapping file for LID: ${lidNumber}`);
+                    // Fallback: try to find in all lid-mapping files
+                    const files = fs.readdirSync(this.authDir).filter(f => f.startsWith('lid-mapping-') && f.endsWith('_reverse.json'));
+                    console.log(`[WA Bot] Available reverse mappings: ${files.join(', ')}`);
+                  }
+                } catch (err) {
+                  console.error(`[WA Bot] LID resolution error:`, err);
+                }
+              }
+
+              // Pass both: resolved JID (for DB lookup) and original JID (for replies)
+              const processMsg = { ...msg, key: { ...msg.key, remoteJid: jid }, _originalJid: msg.key.remoteJid };
+              console.log(`[WA Bot] Processing message from: ${jid} (original: ${msg.key.remoteJid})`);
 
               try {
-                await this.handleIncomingMessage(msg);
+                await this.handleIncomingMessage(processMsg);
               } catch (err) {
                 console.error('[WA Bot] Message handler error:', err);
               }
