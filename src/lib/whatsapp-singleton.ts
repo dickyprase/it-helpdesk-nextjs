@@ -164,92 +164,79 @@ class WhatsAppService {
 
   /**
    * Resolve a JID (could be @lid or @s.whatsapp.net) to a phone number.
-   * Uses Baileys auth state lid-mapping files.
-   * Returns the phone number without any suffix.
+   * Reads Baileys auth state lid-mapping files from .wa-auth/ directory.
    */
   private resolveJidToPhone(jid: string): string | null {
-    // Already a phone JID
+    // Already a phone JID — just strip suffix
     if (jid.endsWith('@s.whatsapp.net')) {
       return jid.replace('@s.whatsapp.net', '');
     }
 
-    // LID format — resolve via auth state mapping files
+    // LID format — need to resolve to phone number
     if (jid.endsWith('@lid')) {
       const lidNumber = jid.replace('@lid', '');
-      console.log(`[WA Bot] Resolving LID: ${lidNumber}`);
+      console.log(`[WA Bot] Resolving LID: ${lidNumber}, authDir: ${this.authDir}`);
 
       try {
+        // Check auth dir exists
         if (!fs.existsSync(this.authDir)) {
-          console.log(`[WA Bot] Auth dir not found: ${this.authDir}`);
+          console.log(`[WA Bot] ERROR: authDir does not exist: ${this.authDir}`);
           return null;
         }
 
-        // Strategy 1: Direct reverse mapping file
-        const reverseFile = path.join(this.authDir, `lid-mapping-${lidNumber}_reverse.json`);
-        if (fs.existsSync(reverseFile)) {
-          const content = fs.readFileSync(reverseFile, 'utf-8').trim();
-          const phone = content.replace(/"/g, '').trim();
-          if (phone && /^\d+$/.test(phone)) {
-            console.log(`[WA Bot] LID resolved (reverse file): ${lidNumber} → ${phone}`);
+        // List all files in auth dir for debugging
+        const allFiles = fs.readdirSync(this.authDir);
+        const lidFiles = allFiles.filter(f => f.includes('lid-mapping'));
+        console.log(`[WA Bot] Found ${lidFiles.length} lid-mapping files in ${this.authDir}`);
+
+        // Strategy 1: Read reverse mapping file directly
+        // File: lid-mapping-{LID}_reverse.json → contains phone number as JSON string
+        const reverseFileName = `lid-mapping-${lidNumber}_reverse.json`;
+        const reverseFilePath = path.join(this.authDir, reverseFileName);
+        console.log(`[WA Bot] Checking reverse file: ${reverseFileName} (exists: ${fs.existsSync(reverseFilePath)})`);
+
+        if (fs.existsSync(reverseFilePath)) {
+          const raw = fs.readFileSync(reverseFilePath, 'utf-8');
+          // Content is a JSON string like: "6289685259671"
+          // Remove all quotes and whitespace to get pure digits
+          const phone = raw.replace(/["\s]/g, '').trim();
+          console.log(`[WA Bot] Reverse file raw: ${JSON.stringify(raw)}, cleaned: ${phone}`);
+          if (phone && /^\d{8,}$/.test(phone)) {
+            console.log(`[WA Bot] ✅ LID RESOLVED: ${lidNumber} → ${phone}`);
             return phone;
           }
         }
 
-        // Strategy 2: Scan ALL non-reverse mapping files (phone → lid)
-        // File format: lid-mapping-{phone}.json contains "{lid}"
-        const allFiles = fs.readdirSync(this.authDir);
-        const mappingFiles = allFiles.filter(f => 
-          f.startsWith('lid-mapping-') && 
-          !f.endsWith('_reverse.json') && 
-          f.endsWith('.json')
-        );
+        // Strategy 2: Scan forward mapping files (lid-mapping-{PHONE}.json → contains LID)
+        const forwardFiles = lidFiles.filter(f => !f.includes('_reverse'));
+        console.log(`[WA Bot] Scanning ${forwardFiles.length} forward mapping files...`);
 
-        console.log(`[WA Bot] Scanning ${mappingFiles.length} mapping files for LID ${lidNumber}...`);
+        for (const fileName of forwardFiles) {
+          const filePath = path.join(this.authDir, fileName);
+          const raw = fs.readFileSync(filePath, 'utf-8');
+          const storedLid = raw.replace(/["\s]/g, '').trim();
 
-        for (const file of mappingFiles) {
-          try {
-            const content = fs.readFileSync(path.join(this.authDir, file), 'utf-8').trim();
-            const mappedLid = content.replace(/"/g, '').trim();
-            if (mappedLid === lidNumber) {
-              // Extract phone from filename: lid-mapping-{phone}.json
-              const phone = file.replace('lid-mapping-', '').replace('.json', '');
-              if (/^\d+$/.test(phone)) {
-                console.log(`[WA Bot] LID resolved (forward scan): ${lidNumber} → ${phone} (from ${file})`);
-                return phone;
-              }
-            }
-          } catch { /* skip unreadable files */ }
-        }
-
-        // Strategy 3: Check device-list files (device-list-{phone}.json)
-        const deviceFiles = allFiles.filter(f => f.startsWith('device-list-') && f.endsWith('.json'));
-        console.log(`[WA Bot] Checking ${deviceFiles.length} device-list files...`);
-        for (const file of deviceFiles) {
-          const phone = file.replace('device-list-', '').replace('.json', '');
-          if (/^\d+$/.test(phone) && phone.length > 8) {
-            // Check if this phone has a lid-mapping that matches
-            const fwdFile = path.join(this.authDir, `lid-mapping-${phone}.json`);
-            if (fs.existsSync(fwdFile)) {
-              const content = fs.readFileSync(fwdFile, 'utf-8').trim().replace(/"/g, '');
-              if (content === lidNumber) {
-                console.log(`[WA Bot] LID resolved (device+forward): ${lidNumber} → ${phone}`);
-                return phone;
-              }
+          if (storedLid === lidNumber) {
+            // Extract phone from filename: lid-mapping-{PHONE}.json
+            const phone = fileName.replace('lid-mapping-', '').replace('.json', '');
+            if (/^\d{8,}$/.test(phone)) {
+              console.log(`[WA Bot] ✅ LID RESOLVED (forward): ${lidNumber} → ${phone} (file: ${fileName})`);
+              return phone;
             }
           }
         }
 
-        console.log(`[WA Bot] LID NOT resolved: ${lidNumber}`);
-        console.log(`[WA Bot] Auth files: ${allFiles.filter(f => f.includes('lid') || f.includes('device')).join(', ')}`);
+        console.log(`[WA Bot] ❌ LID NOT RESOLVED: ${lidNumber}`);
+        console.log(`[WA Bot] Available lid files: ${lidFiles.join(', ')}`);
+        return null;
       } catch (err) {
         console.error(`[WA Bot] LID resolution error:`, err);
+        return null;
       }
-      return null;
     }
 
-    // Unknown format — try to extract digits
-    const digits = jid.replace(/@.*$/, '');
-    return /^\d+$/.test(digits) ? digits : null;
+    // Unknown format
+    return null;
   }
 
   private async verifyUser(jid: string): Promise<{ id: string; name: string } | null> {
