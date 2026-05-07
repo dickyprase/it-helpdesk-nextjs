@@ -14,7 +14,7 @@ const nextConfig: NextConfig = {
       bodySizeLimit: '50mb', // reduced from 100mb; only file uploads need this
     },
   },
-  serverExternalPackages: ['@whiskeysockets/baileys'],
+  serverExternalPackages: ['@whiskeysockets/baileys', 'gifted-btns'],
   async headers() {
     return [
       {

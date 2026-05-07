@@ -12,6 +12,9 @@ import path from 'path';
 import fs from 'fs';
 import { prisma } from './db';
 
+// gifted-btns loaded dynamically to avoid build issues
+let giftedSendButtons: any = null;
+
 type ConnectionStatus =
   | 'disconnected'
   | 'connecting'
@@ -24,8 +27,28 @@ type WAEventListener = (event: {
   data: string;
 }) => void;
 
-// Silent logger for Baileys internals (suppress noisy output)
+// Conversation state for bot interactions
+type ConversationState = {
+  step: 'idle' | 'waiting_title' | 'waiting_category' | 'waiting_description' | 'waiting_ticket_code';
+  data: {
+    title?: string;
+    category_id?: string;
+    category_name?: string;
+  };
+  userId: string;
+  userName: string;
+  timeout?: ReturnType<typeof setTimeout>;
+};
+
+// Silent logger for Baileys internals
 const logger = Pino({ level: 'silent' });
+
+// Ticket code generator
+function generateTicketCode(): string {
+  const ts = Date.now().toString(36).toUpperCase();
+  const rand = Math.random().toString(36).substring(2, 6).toUpperCase();
+  return `TKT-${ts}-${rand}`;
+}
 
 class WhatsAppService {
   private socket: WASocket | null = null;
@@ -36,6 +59,12 @@ class WhatsAppService {
   private authDir = path.join(process.cwd(), '.wa-auth');
   private isIntentionalDisconnect = false;
 
+  // Bot conversation states (per JID)
+  private conversations = new Map<string, ConversationState>();
+
+  // Conversation timeout (5 minutes)
+  private readonly CONV_TIMEOUT_MS = 5 * 60 * 1000;
+
   getStatus() {
     return this.status;
   }
@@ -44,10 +73,6 @@ class WhatsAppService {
     return this.qrCode;
   }
 
-  /**
-   * Check if a saved session exists on disk.
-   * Used to auto-reconnect on app startup.
-   */
   hasSession(): boolean {
     try {
       return (
@@ -90,9 +115,6 @@ class WhatsAppService {
     }
   }
 
-  /**
-   * Clear the auth session directory (forces fresh QR scan on next connect).
-   */
   private async clearAuthState() {
     try {
       const fsp = await import('fs/promises');
@@ -102,11 +124,448 @@ class WhatsAppService {
     }
   }
 
-  /**
-   * Connect to WhatsApp.
-   * If a saved session exists, it will reconnect automatically without QR.
-   * If no session, it will generate a QR code for scanning.
-   */
+  // ============================================================
+  // BOT: Send buttons via gifted-btns with fallback
+  // ============================================================
+
+  private async sendBotButtons(
+    jid: string,
+    payload: { text: string; footer?: string; buttons: Array<{ id: string; text: string }> }
+  ) {
+    if (!this.socket) return;
+
+    try {
+      // Lazy-load gifted-btns at runtime (not during build)
+      if (!giftedSendButtons) {
+        const mod = await import('gifted-btns');
+        giftedSendButtons = mod.default?.sendButtons || mod.sendButtons;
+      }
+
+      if (giftedSendButtons) {
+        await giftedSendButtons(this.socket, jid, { ...payload, aimode: true });
+      } else {
+        throw new Error('gifted-btns not loaded');
+      }
+    } catch (err) {
+      // Fallback: send as numbered text if buttons fail
+      console.error('[WA Bot] Buttons failed, using text fallback:', (err as Error).message);
+      let fallback = payload.text + '\n\n';
+      payload.buttons.forEach((btn, i) => {
+        fallback += `${i + 1}. ${btn.text}\n`;
+      });
+      fallback += '\n_Balas dengan angka pilihan._';
+      await this.socket.sendMessage(jid, { text: fallback });
+    }
+  }
+
+  // ============================================================
+  // BOT: Verify user by phone number
+  // ============================================================
+
+  private async verifyUser(jid: string): Promise<{ id: string; name: string } | null> {
+    const phone = jid.replace('@s.whatsapp.net', '');
+
+    try {
+      // Search with multiple phone formats
+      const user = await prisma.user.findFirst({
+        where: {
+          OR: [
+            { phone: phone },
+            { phone: '0' + phone.substring(2) },
+            { phone: '+' + phone },
+          ],
+          is_active: true,
+          role: 'USER',
+        },
+        select: { id: true, name: true },
+      });
+      return user;
+    } catch {
+      return null;
+    }
+  }
+
+  // ============================================================
+  // BOT: Extract message body from various message types
+  // ============================================================
+
+  private extractMessageBody(msg: any): string {
+    const message = msg.message;
+    if (!message) return '';
+
+    const type = Object.keys(message)[0];
+
+    if (type === 'conversation') return message.conversation || '';
+    if (type === 'extendedTextMessage') return message.extendedTextMessage?.text || '';
+    if (type === 'buttonsResponseMessage') return message.buttonsResponseMessage?.selectedButtonId || '';
+    if (type === 'templateButtonReplyMessage') return message.templateButtonReplyMessage?.selectedId || '';
+    if (type === 'listResponseMessage') return message.listResponseMessage?.singleSelectReply?.selectedRowId || '';
+    if (type === 'interactiveResponseMessage') {
+      try {
+        const json = message.interactiveResponseMessage?.nativeFlowResponseMessage?.paramsJson;
+        if (json) return JSON.parse(json).id || '';
+      } catch { /* ignore */ }
+    }
+
+    return '';
+  }
+
+  // ============================================================
+  // BOT: Set conversation timeout (auto-reset after 5 min)
+  // ============================================================
+
+  private setConvTimeout(jid: string) {
+    const conv = this.conversations.get(jid);
+    if (!conv) return;
+
+    if (conv.timeout) clearTimeout(conv.timeout);
+    conv.timeout = setTimeout(() => {
+      this.conversations.delete(jid);
+    }, this.CONV_TIMEOUT_MS);
+  }
+
+  // ============================================================
+  // BOT: Send main menu
+  // ============================================================
+
+  private async sendMainMenu(jid: string, userName: string) {
+    await this.sendBotButtons(jid, {
+      text: `🎫 *IT Helpdesk Bot*\n━━━━━━━━━━━━━━━━━━━━━\n\nHalo *${userName}*! 👋\nAda yang bisa saya bantu?\n\nSilakan pilih menu di bawah:`,
+      footer: '🤖 Bot IT Helpdesk — Ketik "menu" kapan saja untuk kembali',
+      buttons: [
+        { id: 'create_ticket', text: '📝 Buat Tiket Baru' },
+        { id: 'check_status', text: '📋 Cek Status Tiket' },
+      ],
+    });
+  }
+
+  // ============================================================
+  // BOT: Handle incoming message
+  // ============================================================
+
+  private async handleIncomingMessage(msg: any) {
+    if (!this.socket) return;
+
+    const jid = msg.key.remoteJid;
+    if (!jid) return;
+
+    const body = this.extractMessageBody(msg).trim();
+    if (!body) return;
+
+    console.log(`[WA Bot] Message from ${jid}: ${body.substring(0, 100)}`);
+
+    // 1. Verify user
+    const user = await this.verifyUser(jid);
+    if (!user) {
+      await this.socket.sendMessage(jid, {
+        text: '❌ *Nomor Tidak Terdaftar*\n\nMaaf, nomor WhatsApp Anda belum terdaftar di sistem IT Helpdesk.\n\nSilakan masukkan nomor WA Anda di halaman *Profil* pada aplikasi IT Helpdesk terlebih dahulu.',
+      });
+      return;
+    }
+
+    const cmd = body.toLowerCase();
+
+    // 2. Global commands (always work regardless of state)
+    if (cmd === 'menu' || cmd === 'start' || cmd === 'hi' || cmd === 'halo' || cmd === 'help' || cmd === 'batal') {
+      this.conversations.delete(jid);
+      await this.sendMainMenu(jid, user.name);
+      return;
+    }
+
+    // 3. Handle button responses
+    if (body === 'create_ticket') {
+      this.conversations.set(jid, {
+        step: 'waiting_title',
+        data: {},
+        userId: user.id,
+        userName: user.name,
+      });
+      this.setConvTimeout(jid);
+      await this.socket.sendMessage(jid, {
+        text: '📝 *Buat Tiket Baru*\n━━━━━━━━━━━━━━━━━━━━━\n\nSilakan tulis *judul kendala* Anda:\n\n_(Contoh: Printer lantai 2 error)_',
+      });
+      return;
+    }
+
+    if (body === 'check_status') {
+      this.conversations.set(jid, {
+        step: 'waiting_ticket_code',
+        data: {},
+        userId: user.id,
+        userName: user.name,
+      });
+      this.setConvTimeout(jid);
+      await this.socket.sendMessage(jid, {
+        text: '📋 *Cek Status Tiket*\n━━━━━━━━━━━━━━━━━━━━━\n\nMasukkan *kode tiket* Anda:\n\n_(Contoh: TKT-MO9G0B44-LVE6)_\n\nKetik *menu* untuk kembali.',
+      });
+      return;
+    }
+
+    // 4. Handle category button click (cat_UUID)
+    if (body.startsWith('cat_')) {
+      const state = this.conversations.get(jid);
+      if (state?.step === 'waiting_category') {
+        const categoryId = body.replace('cat_', '');
+
+        // Verify category exists
+        try {
+          const category = await prisma.category.findUnique({ where: { id: categoryId } });
+          if (category) {
+            state.data.category_id = categoryId;
+            state.data.category_name = category.name;
+            state.step = 'waiting_description';
+            this.setConvTimeout(jid);
+
+            await this.socket.sendMessage(jid, {
+              text: `✅ Kategori: *${category.name}*\n\nSekarang tulis *deskripsi lengkap* kendala Anda:\n\n_(Minimal 10 karakter. Jelaskan masalah secara detail agar staff bisa membantu dengan cepat.)_`,
+            });
+            return;
+          }
+        } catch { /* ignore */ }
+      }
+    }
+
+    // 5. Handle numbered fallback (1 = Buat Tiket, 2 = Cek Status)
+    if (body === '1' && !this.conversations.has(jid)) {
+      // Same as create_ticket
+      this.conversations.set(jid, {
+        step: 'waiting_title',
+        data: {},
+        userId: user.id,
+        userName: user.name,
+      });
+      this.setConvTimeout(jid);
+      await this.socket.sendMessage(jid, {
+        text: '📝 *Buat Tiket Baru*\n━━━━━━━━━━━━━━━━━━━━━\n\nSilakan tulis *judul kendala* Anda:\n\n_(Contoh: Printer lantai 2 error)_',
+      });
+      return;
+    }
+
+    if (body === '2' && !this.conversations.has(jid)) {
+      // Same as check_status
+      this.conversations.set(jid, {
+        step: 'waiting_ticket_code',
+        data: {},
+        userId: user.id,
+        userName: user.name,
+      });
+      this.setConvTimeout(jid);
+      await this.socket.sendMessage(jid, {
+        text: '📋 *Cek Status Tiket*\n━━━━━━━━━━━━━━━━━━━━━\n\nMasukkan *kode tiket* Anda:\n\n_(Contoh: TKT-MO9G0B44-LVE6)_',
+      });
+      return;
+    }
+
+    // 6. Handle conversation steps
+    const state = this.conversations.get(jid);
+    if (state) {
+      switch (state.step) {
+        case 'waiting_title': {
+          if (body.length < 5) {
+            await this.socket.sendMessage(jid, {
+              text: '⚠️ Judul terlalu pendek. Minimal 5 karakter.\n\nSilakan tulis ulang judul kendala:',
+            });
+            return;
+          }
+          if (body.length > 200) {
+            await this.socket.sendMessage(jid, {
+              text: '⚠️ Judul terlalu panjang. Maksimal 200 karakter.\n\nSilakan tulis ulang judul kendala:',
+            });
+            return;
+          }
+
+          state.data.title = body;
+          state.step = 'waiting_category';
+          this.setConvTimeout(jid);
+
+          // Fetch categories and send as buttons
+          try {
+            const categories = await prisma.category.findMany({ orderBy: { name: 'asc' } });
+            const catButtons = categories.map((cat) => ({
+              id: `cat_${cat.id}`,
+              text: cat.name,
+            }));
+
+            await this.sendBotButtons(jid, {
+              text: `✅ Judul: *${body}*\n\nSekarang pilih *kategori* tiket:`,
+              footer: 'Pilih kategori yang sesuai dengan kendala Anda',
+              buttons: catButtons,
+            });
+          } catch {
+            await this.socket.sendMessage(jid, {
+              text: '❌ Gagal memuat kategori. Silakan coba lagi nanti.\n\nKetik *menu* untuk kembali.',
+            });
+            this.conversations.delete(jid);
+          }
+          return;
+        }
+
+        case 'waiting_category': {
+          // User typed category name manually (fallback if buttons don't work)
+          try {
+            const categories = await prisma.category.findMany();
+            const match = categories.find(
+              (c) => c.name.toLowerCase() === cmd || categories.indexOf(c) + 1 === parseInt(body)
+            );
+            if (match) {
+              state.data.category_id = match.id;
+              state.data.category_name = match.name;
+              state.step = 'waiting_description';
+              this.setConvTimeout(jid);
+
+              await this.socket.sendMessage(jid, {
+                text: `✅ Kategori: *${match.name}*\n\nSekarang tulis *deskripsi lengkap* kendala Anda:\n\n_(Minimal 10 karakter)_`,
+              });
+            } else {
+              await this.socket.sendMessage(jid, {
+                text: '⚠️ Kategori tidak valid. Silakan pilih dari tombol di atas, atau ketik nama kategori:\n\n• Account\n• Hardware\n• Network\n• Software\n• Other',
+              });
+            }
+          } catch {
+            await this.socket.sendMessage(jid, { text: '❌ Error. Ketik *menu* untuk kembali.' });
+            this.conversations.delete(jid);
+          }
+          return;
+        }
+
+        case 'waiting_description': {
+          if (body.length < 10) {
+            await this.socket.sendMessage(jid, {
+              text: '⚠️ Deskripsi terlalu pendek. Minimal 10 karakter.\n\nSilakan tulis ulang deskripsi kendala:',
+            });
+            return;
+          }
+
+          // Create ticket!
+          try {
+            const code = generateTicketCode();
+            const ticket = await prisma.ticket.create({
+              data: {
+                code,
+                title: state.data.title!,
+                description: body,
+                status: 'OPEN',
+                difficulty_level: 1,
+                category_id: state.data.category_id!,
+                user_id: state.userId,
+              },
+            });
+
+            this.conversations.delete(jid);
+
+            await this.sendBotButtons(jid, {
+              text: `✅ *Tiket Berhasil Dibuat!*\n━━━━━━━━━━━━━━━━━━━━━\n\n📋 Kode: *${ticket.code}*\n📝 Judul: ${state.data.title}\n📂 Kategori: ${state.data.category_name}\n📊 Status: *OPEN*\n\nStaff IT akan segera menangani tiket Anda. Anda akan mendapat notifikasi WhatsApp saat ada update.\n━━━━━━━━━━━━━━━━━━━━━`,
+              footer: '🤖 IT Helpdesk Bot',
+              buttons: [
+                { id: 'create_ticket', text: '📝 Buat Tiket Lagi' },
+                { id: 'check_status', text: '📋 Cek Status Tiket' },
+              ],
+            });
+
+            console.log(`[WA Bot] Ticket created: ${ticket.code} by ${state.userName}`);
+
+            // Trigger notification to managers (fire-and-forget)
+            try {
+              const { sendTicketNotification } = await import('./actions/whatsapp');
+              sendTicketNotification('ticket_created', ticket.id).catch(() => {});
+            } catch { /* ignore */ }
+          } catch (err) {
+            console.error('[WA Bot] Create ticket error:', err);
+            await this.socket.sendMessage(jid, {
+              text: '❌ Gagal membuat tiket. Silakan coba lagi nanti.\n\nKetik *menu* untuk kembali.',
+            });
+            this.conversations.delete(jid);
+          }
+          return;
+        }
+
+        case 'waiting_ticket_code': {
+          // Search ticket by code
+          try {
+            const ticket = await prisma.ticket.findFirst({
+              where: {
+                code: { equals: body.toUpperCase(), mode: 'insensitive' },
+                user_id: state.userId,
+              },
+              include: {
+                category: { select: { name: true } },
+                staff: { select: { name: true } },
+              },
+            });
+
+            this.conversations.delete(jid);
+
+            if (!ticket) {
+              await this.sendBotButtons(jid, {
+                text: '❌ *Tiket Tidak Ditemukan*\n\nPastikan kode tiket benar dan tiket tersebut milik Anda.\n\n_(Kode tiket contoh: TKT-MO9G0B44-LVE6)_',
+                footer: '🤖 IT Helpdesk Bot',
+                buttons: [
+                  { id: 'check_status', text: '📋 Coba Lagi' },
+                  { id: 'create_ticket', text: '📝 Buat Tiket Baru' },
+                ],
+              });
+              return;
+            }
+
+            // Format status
+            const statusMap: Record<string, string> = {
+              OPEN: '🟢 Terbuka',
+              IN_PROGRESS: '🔵 Diproses',
+              PENDING: '🟡 Tertunda',
+              RESOLVED: '🟣 Selesai',
+              CLOSED: '⚫ Ditutup',
+            };
+            const statusLabel = statusMap[ticket.status] || ticket.status;
+            const staffName = ticket.staff?.name || 'Belum ditugaskan';
+            const createdAt = new Date(ticket.created_at).toLocaleDateString('id-ID', {
+              day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit',
+            });
+
+            let detail = `📋 *Detail Tiket*\n━━━━━━━━━━━━━━━━━━━━━\n\n`;
+            detail += `🔖 Kode: *${ticket.code}*\n`;
+            detail += `📝 Judul: ${ticket.title}\n`;
+            detail += `📂 Kategori: ${ticket.category.name}\n`;
+            detail += `📊 Status: ${statusLabel}\n`;
+            detail += `👨‍💻 Staff: ${staffName}\n`;
+            detail += `📅 Dibuat: ${createdAt}\n`;
+
+            if (ticket.resolution_note) {
+              detail += `\n💡 *Solusi:*\n${ticket.resolution_note}\n`;
+            }
+            if (ticket.pending_reason) {
+              detail += `\n⏳ *Alasan Pending:*\n${ticket.pending_reason}\n`;
+            }
+
+            detail += `\n━━━━━━━━━━━━━━━━━━━━━`;
+
+            await this.sendBotButtons(jid, {
+              text: detail,
+              footer: '🤖 IT Helpdesk Bot',
+              buttons: [
+                { id: 'check_status', text: '📋 Cek Tiket Lain' },
+                { id: 'create_ticket', text: '📝 Buat Tiket Baru' },
+              ],
+            });
+          } catch (err) {
+            console.error('[WA Bot] Check status error:', err);
+            await this.socket.sendMessage(jid, {
+              text: '❌ Gagal mengecek status. Silakan coba lagi.\n\nKetik *menu* untuk kembali.',
+            });
+            this.conversations.delete(jid);
+          }
+          return;
+        }
+      }
+    }
+
+    // 7. Default: show main menu
+    await this.sendMainMenu(jid, user.name);
+  }
+
+  // ============================================================
+  // CONNECT
+  // ============================================================
+
   async connect() {
     if (this.status === 'connecting' || this.status === 'connected') {
       return;
@@ -118,10 +577,7 @@ class WhatsAppService {
     await this.updateDbStatus('connecting');
 
     try {
-      // Fetch latest WA Web version for protocol compatibility
       const { version } = await fetchLatestBaileysVersion();
-
-      // Load or create auth state from file system
       const { state, saveCreds } = await useMultiFileAuthState(this.authDir);
 
       const socket = makeWASocket({
@@ -141,18 +597,16 @@ class WhatsAppService {
 
       this.socket = socket;
 
-      // Use batched event processing (inspired by simple-whatsapp-bot)
+      // Batched event processing
       socket.ev.process(async (events) => {
-        // --- Credential updates: persist session to disk ---
         if (events['creds.update']) {
           await saveCreds();
         }
 
-        // --- Connection state changes ---
+        // Connection state changes
         if (events['connection.update']) {
           const { connection, lastDisconnect, qr } = events['connection.update'];
 
-          // QR code received - display for scanning
           if (qr) {
             this.qrCode = qr;
             this.status = 'qr_ready';
@@ -161,65 +615,67 @@ class WhatsAppService {
             await this.updateDbStatus('qr_ready');
           }
 
-          // Connection closed - determine if we should reconnect or clear session
           if (connection === 'close') {
             this.socket = null;
             this.qrCode = null;
 
-            const statusCode = (lastDisconnect?.error as Boom)?.output
-              ?.statusCode;
-
-            // These reasons mean the session is invalid - clear auth and stop
+            const statusCode = (lastDisconnect?.error as Boom)?.output?.statusCode;
             const shouldClearSession =
               statusCode === DisconnectReason.loggedOut ||
               statusCode === DisconnectReason.multideviceMismatch ||
               statusCode === 403;
 
             if (shouldClearSession) {
-              console.log(
-                `[WA] Session invalidated (reason: ${statusCode}). Clearing auth state.`
-              );
+              console.log(`[WA] Session invalidated (reason: ${statusCode}). Clearing auth state.`);
               await this.clearAuthState();
               this.status = 'disconnected';
               this.emit({ type: 'status', data: 'disconnected' });
-              this.emit({
-                type: 'message',
-                data: 'Sesi WhatsApp tidak valid. Silakan scan QR code baru.',
-              });
+              this.emit({ type: 'message', data: 'Sesi WhatsApp tidak valid. Silakan scan QR code baru.' });
               await this.updateDbStatus('disconnected');
             } else if (this.isIntentionalDisconnect) {
-              // User clicked "Putuskan" - don't reconnect, but KEEP session
               this.status = 'disconnected';
               this.emit({ type: 'status', data: 'disconnected' });
               await this.updateDbStatus('disconnected');
             } else {
-              // Unexpected disconnect - auto-reconnect after delay
-              console.log(
-                `[WA] Connection lost (reason: ${statusCode}). Reconnecting in 5s...`
-              );
+              console.log(`[WA] Connection lost (reason: ${statusCode}). Reconnecting in 5s...`);
               this.status = 'reconnecting';
               this.emit({ type: 'status', data: 'reconnecting' });
               await this.updateDbStatus('reconnecting');
 
               if (this.reconnectTimer) clearTimeout(this.reconnectTimer);
               this.reconnectTimer = setTimeout(() => {
-                this.status = 'disconnected'; // Reset so connect() proceeds
+                this.status = 'disconnected';
                 this.connect();
               }, 5000);
             }
           }
 
-          // Connection opened successfully
           if (connection === 'open') {
             this.qrCode = null;
             this.status = 'connected';
             console.log('[WA] Connected successfully.');
             this.emit({ type: 'status', data: 'connected' });
-            this.emit({
-              type: 'message',
-              data: 'WhatsApp terhubung.',
-            });
+            this.emit({ type: 'message', data: 'WhatsApp terhubung.' });
             await this.updateDbStatus('connected');
+          }
+        }
+
+        // ===== MESSAGE HANDLER (BOT) =====
+        if (events['messages.upsert']) {
+          const upsert = events['messages.upsert'];
+          if (upsert.type === 'notify') {
+            for (const msg of upsert.messages) {
+              // Skip own messages, status broadcasts, and group messages
+              if (msg.key.fromMe) continue;
+              if (msg.key.remoteJid === 'status@broadcast') continue;
+              if (msg.key.remoteJid?.endsWith('@g.us')) continue;
+
+              try {
+                await this.handleIncomingMessage(msg);
+              } catch (err) {
+                console.error('[WA Bot] Message handler error:', err);
+              }
+            }
           }
         }
       });
@@ -231,11 +687,10 @@ class WhatsAppService {
     }
   }
 
-  /**
-   * Disconnect from WhatsApp but KEEP the session.
-   * Next time connect() is called, it will reconnect using the saved session
-   * without requiring a new QR scan.
-   */
+  // ============================================================
+  // DISCONNECT / LOGOUT
+  // ============================================================
+
   async disconnect() {
     if (this.reconnectTimer) {
       clearTimeout(this.reconnectTimer);
@@ -246,11 +701,8 @@ class WhatsAppService {
 
     if (this.socket) {
       try {
-        // end() closes the WebSocket without logging out
         this.socket.end(undefined);
-      } catch {
-        // ignore
-      }
+      } catch { /* ignore */ }
       this.socket = null;
     }
 
@@ -260,10 +712,6 @@ class WhatsAppService {
     await this.updateDbStatus('disconnected');
   }
 
-  /**
-   * Logout from WhatsApp AND clear the session.
-   * This forces a fresh QR scan on next connect().
-   */
   async logout() {
     if (this.reconnectTimer) {
       clearTimeout(this.reconnectTimer);
@@ -276,11 +724,7 @@ class WhatsAppService {
       try {
         await this.socket.logout();
       } catch {
-        try {
-          this.socket.end(undefined);
-        } catch {
-          // ignore
-        }
+        try { this.socket.end(undefined); } catch { /* ignore */ }
       }
       this.socket = null;
     }
@@ -289,22 +733,19 @@ class WhatsAppService {
     this.status = 'disconnected';
     this.emit({ type: 'status', data: 'disconnected' });
     await this.updateDbStatus('disconnected');
-
-    // Clear auth state - forces fresh QR scan
     await this.clearAuthState();
   }
 
-  /**
-   * Send a text message to a phone number.
-   * Phone number can be in any format: 08xx, +62xx, 62xx
-   */
+  // ============================================================
+  // SEND MESSAGE (for notifications)
+  // ============================================================
+
   async sendMessage(phoneNumber: string, message: string): Promise<boolean> {
     if (!this.socket || this.status !== 'connected') {
       return false;
     }
 
     try {
-      // Format phone number: strip non-digits, convert leading 0 to 62 (Indonesia)
       let jid = phoneNumber.replace(/[^0-9]/g, '');
       if (jid.startsWith('0')) {
         jid = '62' + jid.substring(1);
@@ -318,59 +759,27 @@ class WhatsAppService {
       return false;
     }
   }
-
-  /**
-   * Send a message with a link preview.
-   */
-  async sendMessageWithPreview(
-    phoneNumber: string,
-    message: string
-  ): Promise<boolean> {
-    if (!this.socket || this.status !== 'connected') {
-      return false;
-    }
-
-    try {
-      let jid = phoneNumber.replace(/[^0-9]/g, '');
-      if (jid.startsWith('0')) {
-        jid = '62' + jid.substring(1);
-      }
-      jid = jid + '@s.whatsapp.net';
-
-      await this.socket.sendMessage(jid, {
-        text: message,
-      });
-      return true;
-    } catch (error) {
-      console.error('[WA] Failed to send message with preview:', error);
-      return false;
-    }
-  }
 }
 
-// Standalone session check — doesn't depend on the class instance,
-// so it works even when globalThis holds a stale object after hot-reload.
+// ============================================================
+// SINGLETON + AUTO-RECONNECT
+// ============================================================
+
 const AUTH_DIR = path.join(process.cwd(), '.wa-auth');
 
 function checkSessionExists(): boolean {
   try {
-    return (
-      fs.existsSync(AUTH_DIR) &&
-      fs.existsSync(path.join(AUTH_DIR, 'creds.json'))
-    );
+    return fs.existsSync(AUTH_DIR) && fs.existsSync(path.join(AUTH_DIR, 'creds.json'));
   } catch {
     return false;
   }
 }
 
-// Singleton pattern - persists across hot reloads in dev
 const globalForWA = globalThis as unknown as {
   waService: WhatsAppService;
   waAutoReconnectDone?: boolean;
 };
 
-// If the cached instance is from an older version of the class (missing new
-// methods after a hot-reload), replace it with a fresh instance.
 if (globalForWA.waService && typeof globalForWA.waService.hasSession !== 'function') {
   globalForWA.waService = new WhatsAppService();
   globalForWA.waAutoReconnectDone = false;
@@ -381,9 +790,6 @@ if (process.env.NODE_ENV !== 'production') {
   globalForWA.waService = waService;
 }
 
-// Auto-reconnect on startup if a saved session exists.
-// The flag prevents re-running on every hot-reload in dev.
-// Skip during build (no runtime available).
 if (typeof globalForWA.waAutoReconnectDone === 'undefined') {
   globalForWA.waAutoReconnectDone = false;
 }
