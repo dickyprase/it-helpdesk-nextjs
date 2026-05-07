@@ -733,14 +733,16 @@ class WhatsAppService {
 
           if (type === 'notify' && Array.isArray(messages)) {
             for (const msg of messages) {
+              // LOG FULL RAW MESSAGE
+              console.log(`[WA Bot] ========== RAW MESSAGE ==========`);
+              console.log(JSON.stringify(msg, null, 2));
+              console.log(`[WA Bot] ================================`);
+
               // Skip invalid messages
               if (!msg.message) continue;
               if (msg.key.fromMe) continue;
               if (msg.key.remoteJid === 'status@broadcast') continue;
               if (msg.key.remoteJid?.endsWith('@g.us')) continue;
-
-              const rawJid = msg.key.remoteJid || '';
-              console.log(`[WA Bot] Incoming from: ${rawJid}, msg type: ${Object.keys(msg.message || {}).join(',')}`);
 
               try {
                 await this.handleIncomingMessage(msg);
