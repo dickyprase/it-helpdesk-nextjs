@@ -162,8 +162,60 @@ class WhatsAppService {
   // BOT: Verify user by phone number
   // ============================================================
 
+  /**
+   * Resolve a JID (could be @lid or @s.whatsapp.net) to a phone number.
+   * Returns the phone number without any suffix.
+   */
+  private resolveJidToPhone(jid: string): string | null {
+    // Already a phone JID
+    if (jid.endsWith('@s.whatsapp.net')) {
+      return jid.replace('@s.whatsapp.net', '');
+    }
+
+    // LID format — resolve via mapping file
+    if (jid.endsWith('@lid')) {
+      const lidNumber = jid.replace('@lid', '');
+      try {
+        const mappingFile = path.join(this.authDir, `lid-mapping-${lidNumber}_reverse.json`);
+        if (fs.existsSync(mappingFile)) {
+          const content = fs.readFileSync(mappingFile, 'utf-8').trim();
+          const phoneNumber = JSON.parse(content);
+          if (phoneNumber && typeof phoneNumber === 'string') {
+            console.log(`[WA Bot] LID resolved: ${lidNumber} → ${phoneNumber}`);
+            return phoneNumber;
+          }
+        }
+        // Fallback: scan all reverse mapping files
+        const files = fs.readdirSync(this.authDir)
+          .filter(f => f.startsWith('lid-mapping-') && f.endsWith('_reverse.json'));
+        for (const file of files) {
+          if (file.includes(lidNumber)) {
+            const content = fs.readFileSync(path.join(this.authDir, file), 'utf-8').trim();
+            const phone = JSON.parse(content);
+            if (phone) {
+              console.log(`[WA Bot] LID resolved (scan): ${lidNumber} → ${phone}`);
+              return phone;
+            }
+          }
+        }
+        console.log(`[WA Bot] LID NOT resolved: ${lidNumber}. Available files: ${files.join(', ')}`);
+      } catch (err) {
+        console.error(`[WA Bot] LID resolution error for ${lidNumber}:`, err);
+      }
+      return null;
+    }
+
+    // Unknown format
+    return jid.replace(/@.*$/, '') || null;
+  }
+
   private async verifyUser(jid: string): Promise<{ id: string; name: string } | null> {
-    const phone = jid.replace('@s.whatsapp.net', '');
+    // Resolve JID to phone number first
+    const phone = this.resolveJidToPhone(jid);
+    if (!phone) {
+      console.log(`[WA Bot] Cannot resolve JID to phone: ${jid}`);
+      return null;
+    }
 
     // Build all possible phone formats
     const phoneVariants: string[] = [phone];
@@ -175,7 +227,7 @@ class WhatsAppService {
       phoneVariants.push('+62' + phone.substring(1));  // 08xx → +628xx
     }
 
-    console.log(`[WA Bot] Verifying user for JID: ${jid}, phone variants:`, phoneVariants);
+    console.log(`[WA Bot] Verifying phone: ${phone}, variants:`, phoneVariants);
 
     try {
       const user = await prisma.user.findFirst({
@@ -255,20 +307,18 @@ class WhatsAppService {
   private async handleIncomingMessage(msg: any) {
     if (!this.socket) return;
 
-    const jid = msg.key.remoteJid;
-    if (!jid) return;
-
-    // replyJid: use original remoteJid for sending replies (could be LID or s.whatsapp.net)
-    // For verification, use the resolved s.whatsapp.net JID
-    const replyJid = msg._originalJid || jid;
+    // replyJid = raw JID from WhatsApp (could be @lid or @s.whatsapp.net)
+    // This is what we use to SEND replies back
+    const replyJid = msg.key.remoteJid;
+    if (!replyJid) return;
 
     const body = this.extractMessageBody(msg).trim();
     if (!body) return;
 
-    console.log(`[WA Bot] Message from ${jid} (reply to: ${replyJid}): ${body.substring(0, 100)}`);
+    console.log(`[WA Bot] Message: "${body.substring(0, 80)}" from: ${replyJid}`);
 
-    // 1. Verify user
-    const user = await this.verifyUser(jid);
+    // 1. Verify user (resolves LID → phone internally)
+    const user = await this.verifyUser(replyJid);
     if (!user) {
       await this.socket.sendMessage(replyJid, {
         text: '❌ *Nomor Tidak Terdaftar*\n\nMaaf, nomor WhatsApp Anda belum terdaftar di sistem IT Helpdesk.\n\nSilakan masukkan nomor WA Anda di halaman *Profil* pada aplikasi IT Helpdesk terlebih dahulu.',
@@ -280,20 +330,20 @@ class WhatsAppService {
 
     // 2. Global commands (always work regardless of state)
     if (cmd === 'menu' || cmd === 'start' || cmd === 'hi' || cmd === 'halo' || cmd === 'help' || cmd === 'batal') {
-      this.conversations.delete(jid);
+      this.conversations.delete(replyJid);
       await this.sendMainMenu(replyJid, user.name);
       return;
     }
 
     // 3. Handle button responses
     if (body === 'create_ticket') {
-      this.conversations.set(jid, {
+      this.conversations.set(replyJid, {
         step: 'waiting_title',
         data: {},
         userId: user.id,
         userName: user.name,
       });
-      this.setConvTimeout(jid);
+      this.setConvTimeout(replyJid);
       await this.socket.sendMessage(replyJid, {
         text: '📝 *Buat Tiket Baru*\n━━━━━━━━━━━━━━━━━━━━━\n\nSilakan tulis *judul kendala* Anda:\n\n_(Contoh: Printer lantai 2 error)_',
       });
@@ -301,13 +351,13 @@ class WhatsAppService {
     }
 
     if (body === 'check_status') {
-      this.conversations.set(jid, {
+      this.conversations.set(replyJid, {
         step: 'waiting_ticket_code',
         data: {},
         userId: user.id,
         userName: user.name,
       });
-      this.setConvTimeout(jid);
+      this.setConvTimeout(replyJid);
       await this.socket.sendMessage(replyJid, {
         text: '📋 *Cek Status Tiket*\n━━━━━━━━━━━━━━━━━━━━━\n\nMasukkan *kode tiket* Anda:\n\n_(Contoh: TKT-MO9G0B44-LVE6)_\n\nKetik *menu* untuk kembali.',
       });
@@ -316,7 +366,7 @@ class WhatsAppService {
 
     // 4. Handle category button click (cat_UUID)
     if (body.startsWith('cat_')) {
-      const state = this.conversations.get(jid);
+      const state = this.conversations.get(replyJid);
       if (state?.step === 'waiting_category') {
         const categoryId = body.replace('cat_', '');
 
@@ -327,7 +377,7 @@ class WhatsAppService {
             state.data.category_id = categoryId;
             state.data.category_name = category.name;
             state.step = 'waiting_description';
-            this.setConvTimeout(jid);
+            this.setConvTimeout(replyJid);
 
             await this.socket.sendMessage(replyJid, {
               text: `✅ Kategori: *${category.name}*\n\nSekarang tulis *deskripsi lengkap* kendala Anda:\n\n_(Minimal 10 karakter. Jelaskan masalah secara detail agar staff bisa membantu dengan cepat.)_`,
@@ -339,30 +389,30 @@ class WhatsAppService {
     }
 
     // 5. Handle numbered fallback (1 = Buat Tiket, 2 = Cek Status)
-    if (body === '1' && !this.conversations.has(jid)) {
+    if (body === '1' && !this.conversations.has(replyJid)) {
       // Same as create_ticket
-      this.conversations.set(jid, {
+      this.conversations.set(replyJid, {
         step: 'waiting_title',
         data: {},
         userId: user.id,
         userName: user.name,
       });
-      this.setConvTimeout(jid);
+      this.setConvTimeout(replyJid);
       await this.socket.sendMessage(replyJid, {
         text: '📝 *Buat Tiket Baru*\n━━━━━━━━━━━━━━━━━━━━━\n\nSilakan tulis *judul kendala* Anda:\n\n_(Contoh: Printer lantai 2 error)_',
       });
       return;
     }
 
-    if (body === '2' && !this.conversations.has(jid)) {
+    if (body === '2' && !this.conversations.has(replyJid)) {
       // Same as check_status
-      this.conversations.set(jid, {
+      this.conversations.set(replyJid, {
         step: 'waiting_ticket_code',
         data: {},
         userId: user.id,
         userName: user.name,
       });
-      this.setConvTimeout(jid);
+      this.setConvTimeout(replyJid);
       await this.socket.sendMessage(replyJid, {
         text: '📋 *Cek Status Tiket*\n━━━━━━━━━━━━━━━━━━━━━\n\nMasukkan *kode tiket* Anda:\n\n_(Contoh: TKT-MO9G0B44-LVE6)_',
       });
@@ -370,7 +420,7 @@ class WhatsAppService {
     }
 
     // 6. Handle conversation steps
-    const state = this.conversations.get(jid);
+    const state = this.conversations.get(replyJid);
     if (state) {
       switch (state.step) {
         case 'waiting_title': {
@@ -389,7 +439,7 @@ class WhatsAppService {
 
           state.data.title = body;
           state.step = 'waiting_category';
-          this.setConvTimeout(jid);
+          this.setConvTimeout(replyJid);
 
           // Fetch categories and send as buttons
           try {
@@ -408,7 +458,7 @@ class WhatsAppService {
             await this.socket.sendMessage(replyJid, {
               text: '❌ Gagal memuat kategori. Silakan coba lagi nanti.\n\nKetik *menu* untuk kembali.',
             });
-            this.conversations.delete(jid);
+            this.conversations.delete(replyJid);
           }
           return;
         }
@@ -424,7 +474,7 @@ class WhatsAppService {
               state.data.category_id = match.id;
               state.data.category_name = match.name;
               state.step = 'waiting_description';
-              this.setConvTimeout(jid);
+              this.setConvTimeout(replyJid);
 
               await this.socket.sendMessage(replyJid, {
                 text: `✅ Kategori: *${match.name}*\n\nSekarang tulis *deskripsi lengkap* kendala Anda:\n\n_(Minimal 10 karakter)_`,
@@ -436,7 +486,7 @@ class WhatsAppService {
             }
           } catch {
             await this.socket.sendMessage(replyJid, { text: '❌ Error. Ketik *menu* untuk kembali.' });
-            this.conversations.delete(jid);
+            this.conversations.delete(replyJid);
           }
           return;
         }
@@ -464,7 +514,7 @@ class WhatsAppService {
               },
             });
 
-            this.conversations.delete(jid);
+            this.conversations.delete(replyJid);
 
             await this.sendBotButtons(replyJid, {
               text: `✅ *Tiket Berhasil Dibuat!*\n━━━━━━━━━━━━━━━━━━━━━\n\n📋 Kode: *${ticket.code}*\n📝 Judul: ${state.data.title}\n📂 Kategori: ${state.data.category_name}\n📊 Status: *OPEN*\n\nStaff IT akan segera menangani tiket Anda. Anda akan mendapat notifikasi WhatsApp saat ada update.\n━━━━━━━━━━━━━━━━━━━━━`,
@@ -487,7 +537,7 @@ class WhatsAppService {
             await this.socket.sendMessage(replyJid, {
               text: '❌ Gagal membuat tiket. Silakan coba lagi nanti.\n\nKetik *menu* untuk kembali.',
             });
-            this.conversations.delete(jid);
+            this.conversations.delete(replyJid);
           }
           return;
         }
@@ -506,7 +556,7 @@ class WhatsAppService {
               },
             });
 
-            this.conversations.delete(jid);
+            this.conversations.delete(replyJid);
 
             if (!ticket) {
               await this.sendBotButtons(replyJid, {
@@ -564,7 +614,7 @@ class WhatsAppService {
             await this.socket.sendMessage(replyJid, {
               text: '❌ Gagal mengecek status. Silakan coba lagi.\n\nKetik *menu* untuk kembali.',
             });
-            this.conversations.delete(jid);
+            this.conversations.delete(replyJid);
           }
           return;
         }
@@ -683,48 +733,17 @@ class WhatsAppService {
 
           if (type === 'notify' && Array.isArray(messages)) {
             for (const msg of messages) {
-              // Log raw message key for debugging
-              console.log(`[WA Bot] RAW msg.key:`, JSON.stringify(msg.key));
-              console.log(`[WA Bot] RAW msg.message keys:`, msg.message ? Object.keys(msg.message) : 'null');
-
-              // Skip own messages, status broadcasts, and group messages
+              // Skip invalid messages
               if (!msg.message) continue;
               if (msg.key.fromMe) continue;
               if (msg.key.remoteJid === 'status@broadcast') continue;
               if (msg.key.remoteJid?.endsWith('@g.us')) continue;
 
-              // Resolve LID to phone number JID
-              let jid = msg.key.remoteJid || '';
-              if (jid.endsWith('@lid')) {
-                const lidNumber = jid.replace('@lid', '');
-                console.log(`[WA Bot] LID detected: ${lidNumber}, resolving to phone number...`);
-
-                // Read LID reverse mapping from auth state
-                try {
-                  const mappingFile = path.join(this.authDir, `lid-mapping-${lidNumber}_reverse.json`);
-                  if (fs.existsSync(mappingFile)) {
-                    const phoneNumber = JSON.parse(fs.readFileSync(mappingFile, 'utf-8'));
-                    if (phoneNumber) {
-                      jid = phoneNumber + '@s.whatsapp.net';
-                      console.log(`[WA Bot] LID resolved: ${lidNumber} → ${phoneNumber}`);
-                    }
-                  } else {
-                    console.log(`[WA Bot] No reverse mapping file for LID: ${lidNumber}`);
-                    // Fallback: try to find in all lid-mapping files
-                    const files = fs.readdirSync(this.authDir).filter(f => f.startsWith('lid-mapping-') && f.endsWith('_reverse.json'));
-                    console.log(`[WA Bot] Available reverse mappings: ${files.join(', ')}`);
-                  }
-                } catch (err) {
-                  console.error(`[WA Bot] LID resolution error:`, err);
-                }
-              }
-
-              // Pass both: resolved JID (for DB lookup) and original JID (for replies)
-              const processMsg = { ...msg, key: { ...msg.key, remoteJid: jid }, _originalJid: msg.key.remoteJid };
-              console.log(`[WA Bot] Processing message from: ${jid} (original: ${msg.key.remoteJid})`);
+              const rawJid = msg.key.remoteJid || '';
+              console.log(`[WA Bot] Incoming from: ${rawJid}, msg type: ${Object.keys(msg.message || {}).join(',')}`);
 
               try {
-                await this.handleIncomingMessage(processMsg);
+                await this.handleIncomingMessage(msg);
               } catch (err) {
                 console.error('[WA Bot] Message handler error:', err);
               }
