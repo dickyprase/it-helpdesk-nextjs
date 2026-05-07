@@ -165,22 +165,31 @@ class WhatsAppService {
   private async verifyUser(jid: string): Promise<{ id: string; name: string } | null> {
     const phone = jid.replace('@s.whatsapp.net', '');
 
+    // Build all possible phone formats
+    const phoneVariants: string[] = [phone];
+    if (phone.startsWith('62')) {
+      phoneVariants.push('0' + phone.substring(2));   // 628xx → 08xx
+      phoneVariants.push('+' + phone);                 // 628xx → +628xx
+    } else if (phone.startsWith('0')) {
+      phoneVariants.push('62' + phone.substring(1));   // 08xx → 628xx
+      phoneVariants.push('+62' + phone.substring(1));  // 08xx → +628xx
+    }
+
+    console.log(`[WA Bot] Verifying user for JID: ${jid}, phone variants:`, phoneVariants);
+
     try {
-      // Search with multiple phone formats
       const user = await prisma.user.findFirst({
         where: {
-          OR: [
-            { phone: phone },
-            { phone: '0' + phone.substring(2) },
-            { phone: '+' + phone },
-          ],
+          phone: { in: phoneVariants },
           is_active: true,
           role: 'USER',
         },
         select: { id: true, name: true },
       });
+      console.log(`[WA Bot] User found:`, user ? `${user.name} (${user.id})` : 'null');
       return user;
-    } catch {
+    } catch (err) {
+      console.error('[WA Bot] verifyUser error:', err);
       return null;
     }
   }
@@ -662,13 +671,21 @@ class WhatsAppService {
 
         // ===== MESSAGE HANDLER (BOT) =====
         if (events['messages.upsert']) {
-          const upsert = events['messages.upsert'];
-          if (upsert.type === 'notify') {
-            for (const msg of upsert.messages) {
+          const upsert = events['messages.upsert'] as any;
+          const messages = upsert.messages || upsert;
+          const type = upsert.type || 'notify';
+
+          console.log(`[WA Bot] messages.upsert received: type=${type}, count=${Array.isArray(messages) ? messages.length : 'N/A'}`);
+
+          if (type === 'notify' && Array.isArray(messages)) {
+            for (const msg of messages) {
               // Skip own messages, status broadcasts, and group messages
+              if (!msg.message) continue;
               if (msg.key.fromMe) continue;
               if (msg.key.remoteJid === 'status@broadcast') continue;
               if (msg.key.remoteJid?.endsWith('@g.us')) continue;
+
+              console.log(`[WA Bot] Processing message from: ${msg.key.remoteJid}`);
 
               try {
                 await this.handleIncomingMessage(msg);
