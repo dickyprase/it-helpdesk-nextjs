@@ -164,6 +164,7 @@ class WhatsAppService {
 
   /**
    * Resolve a JID (could be @lid or @s.whatsapp.net) to a phone number.
+   * Uses Baileys auth state lid-mapping files.
    * Returns the phone number without any suffix.
    */
   private resolveJidToPhone(jid: string): string | null {
@@ -172,41 +173,83 @@ class WhatsAppService {
       return jid.replace('@s.whatsapp.net', '');
     }
 
-    // LID format — resolve via mapping file
+    // LID format — resolve via auth state mapping files
     if (jid.endsWith('@lid')) {
       const lidNumber = jid.replace('@lid', '');
+      console.log(`[WA Bot] Resolving LID: ${lidNumber}`);
+
       try {
-        const mappingFile = path.join(this.authDir, `lid-mapping-${lidNumber}_reverse.json`);
-        if (fs.existsSync(mappingFile)) {
-          const content = fs.readFileSync(mappingFile, 'utf-8').trim();
-          const phoneNumber = JSON.parse(content);
-          if (phoneNumber && typeof phoneNumber === 'string') {
-            console.log(`[WA Bot] LID resolved: ${lidNumber} → ${phoneNumber}`);
-            return phoneNumber;
+        if (!fs.existsSync(this.authDir)) {
+          console.log(`[WA Bot] Auth dir not found: ${this.authDir}`);
+          return null;
+        }
+
+        // Strategy 1: Direct reverse mapping file
+        const reverseFile = path.join(this.authDir, `lid-mapping-${lidNumber}_reverse.json`);
+        if (fs.existsSync(reverseFile)) {
+          const content = fs.readFileSync(reverseFile, 'utf-8').trim();
+          const phone = content.replace(/"/g, '').trim();
+          if (phone && /^\d+$/.test(phone)) {
+            console.log(`[WA Bot] LID resolved (reverse file): ${lidNumber} → ${phone}`);
+            return phone;
           }
         }
-        // Fallback: scan all reverse mapping files
-        const files = fs.readdirSync(this.authDir)
-          .filter(f => f.startsWith('lid-mapping-') && f.endsWith('_reverse.json'));
-        for (const file of files) {
-          if (file.includes(lidNumber)) {
+
+        // Strategy 2: Scan ALL non-reverse mapping files (phone → lid)
+        // File format: lid-mapping-{phone}.json contains "{lid}"
+        const allFiles = fs.readdirSync(this.authDir);
+        const mappingFiles = allFiles.filter(f => 
+          f.startsWith('lid-mapping-') && 
+          !f.endsWith('_reverse.json') && 
+          f.endsWith('.json')
+        );
+
+        console.log(`[WA Bot] Scanning ${mappingFiles.length} mapping files for LID ${lidNumber}...`);
+
+        for (const file of mappingFiles) {
+          try {
             const content = fs.readFileSync(path.join(this.authDir, file), 'utf-8').trim();
-            const phone = JSON.parse(content);
-            if (phone) {
-              console.log(`[WA Bot] LID resolved (scan): ${lidNumber} → ${phone}`);
-              return phone;
+            const mappedLid = content.replace(/"/g, '').trim();
+            if (mappedLid === lidNumber) {
+              // Extract phone from filename: lid-mapping-{phone}.json
+              const phone = file.replace('lid-mapping-', '').replace('.json', '');
+              if (/^\d+$/.test(phone)) {
+                console.log(`[WA Bot] LID resolved (forward scan): ${lidNumber} → ${phone} (from ${file})`);
+                return phone;
+              }
+            }
+          } catch { /* skip unreadable files */ }
+        }
+
+        // Strategy 3: Check device-list files (device-list-{phone}.json)
+        const deviceFiles = allFiles.filter(f => f.startsWith('device-list-') && f.endsWith('.json'));
+        console.log(`[WA Bot] Checking ${deviceFiles.length} device-list files...`);
+        for (const file of deviceFiles) {
+          const phone = file.replace('device-list-', '').replace('.json', '');
+          if (/^\d+$/.test(phone) && phone.length > 8) {
+            // Check if this phone has a lid-mapping that matches
+            const fwdFile = path.join(this.authDir, `lid-mapping-${phone}.json`);
+            if (fs.existsSync(fwdFile)) {
+              const content = fs.readFileSync(fwdFile, 'utf-8').trim().replace(/"/g, '');
+              if (content === lidNumber) {
+                console.log(`[WA Bot] LID resolved (device+forward): ${lidNumber} → ${phone}`);
+                return phone;
+              }
             }
           }
         }
-        console.log(`[WA Bot] LID NOT resolved: ${lidNumber}. Available files: ${files.join(', ')}`);
+
+        console.log(`[WA Bot] LID NOT resolved: ${lidNumber}`);
+        console.log(`[WA Bot] Auth files: ${allFiles.filter(f => f.includes('lid') || f.includes('device')).join(', ')}`);
       } catch (err) {
-        console.error(`[WA Bot] LID resolution error for ${lidNumber}:`, err);
+        console.error(`[WA Bot] LID resolution error:`, err);
       }
       return null;
     }
 
-    // Unknown format
-    return jid.replace(/@.*$/, '') || null;
+    // Unknown format — try to extract digits
+    const digits = jid.replace(/@.*$/, '');
+    return /^\d+$/.test(digits) ? digits : null;
   }
 
   private async verifyUser(jid: string): Promise<{ id: string; name: string } | null> {
