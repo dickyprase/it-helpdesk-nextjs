@@ -162,92 +162,17 @@ class WhatsAppService {
   // BOT: Verify user by phone number
   // ============================================================
 
-  /**
-   * Resolve a JID (could be @lid or @s.whatsapp.net) to a phone number.
-   * Reads Baileys auth state lid-mapping files from .wa-auth/ directory.
-   */
-  private resolveJidToPhone(jid: string): string | null {
-    // Already a phone JID — just strip suffix
-    if (jid.endsWith('@s.whatsapp.net')) {
-      return jid.replace('@s.whatsapp.net', '');
-    }
+  // No resolveJidToPhone needed — we use msg.key.remoteJidAlt directly
 
-    // LID format — need to resolve to phone number
-    if (jid.endsWith('@lid')) {
-      const lidNumber = jid.replace('@lid', '');
-      console.log(`[WA Bot] Resolving LID: ${lidNumber}, authDir: ${this.authDir}`);
-
-      try {
-        // Check auth dir exists
-        if (!fs.existsSync(this.authDir)) {
-          console.log(`[WA Bot] ERROR: authDir does not exist: ${this.authDir}`);
-          return null;
-        }
-
-        // List all files in auth dir for debugging
-        const allFiles = fs.readdirSync(this.authDir);
-        const lidFiles = allFiles.filter(f => f.includes('lid-mapping'));
-        console.log(`[WA Bot] Found ${lidFiles.length} lid-mapping files in ${this.authDir}`);
-
-        // Strategy 1: Read reverse mapping file directly
-        // File: lid-mapping-{LID}_reverse.json → contains phone number as JSON string
-        const reverseFileName = `lid-mapping-${lidNumber}_reverse.json`;
-        const reverseFilePath = path.join(this.authDir, reverseFileName);
-        console.log(`[WA Bot] Checking reverse file: ${reverseFileName} (exists: ${fs.existsSync(reverseFilePath)})`);
-
-        if (fs.existsSync(reverseFilePath)) {
-          const raw = fs.readFileSync(reverseFilePath, 'utf-8');
-          // Content is a JSON string like: "6289685259671"
-          // Remove all quotes and whitespace to get pure digits
-          const phone = raw.replace(/["\s]/g, '').trim();
-          console.log(`[WA Bot] Reverse file raw: ${JSON.stringify(raw)}, cleaned: ${phone}`);
-          if (phone && /^\d{8,}$/.test(phone)) {
-            console.log(`[WA Bot] ✅ LID RESOLVED: ${lidNumber} → ${phone}`);
-            return phone;
-          }
-        }
-
-        // Strategy 2: Scan forward mapping files (lid-mapping-{PHONE}.json → contains LID)
-        const forwardFiles = lidFiles.filter(f => !f.includes('_reverse'));
-        console.log(`[WA Bot] Scanning ${forwardFiles.length} forward mapping files...`);
-
-        for (const fileName of forwardFiles) {
-          const filePath = path.join(this.authDir, fileName);
-          const raw = fs.readFileSync(filePath, 'utf-8');
-          const storedLid = raw.replace(/["\s]/g, '').trim();
-
-          if (storedLid === lidNumber) {
-            // Extract phone from filename: lid-mapping-{PHONE}.json
-            const phone = fileName.replace('lid-mapping-', '').replace('.json', '');
-            if (/^\d{8,}$/.test(phone)) {
-              console.log(`[WA Bot] ✅ LID RESOLVED (forward): ${lidNumber} → ${phone} (file: ${fileName})`);
-              return phone;
-            }
-          }
-        }
-
-        console.log(`[WA Bot] ❌ LID NOT RESOLVED: ${lidNumber}`);
-        console.log(`[WA Bot] Available lid files: ${lidFiles.join(', ')}`);
-        return null;
-      } catch (err) {
-        console.error(`[WA Bot] LID resolution error:`, err);
-        return null;
-      }
-    }
-
-    // Unknown format
-    return null;
-  }
-
-  private async verifyUser(jid: string): Promise<{ id: string; name: string } | null> {
-    // Resolve JID to phone number first
-    const phone = this.resolveJidToPhone(jid);
-    if (!phone) {
-      console.log(`[WA Bot] Cannot resolve JID to phone: ${jid}`);
+  private async verifyUser(phoneJid: string): Promise<{ id: string; name: string } | null> {
+    // Strip suffix (@s.whatsapp.net or @lid) to get raw number
+    const phone = phoneJid.replace(/@.*$/, '');
+    if (!phone || !/^\d+$/.test(phone)) {
+      console.log(`[WA Bot] Invalid phone from JID: ${phoneJid}`);
       return null;
     }
 
-    // Build all possible phone formats
+    // Build all possible phone formats for DB lookup
     const phoneVariants: string[] = [phone];
     if (phone.startsWith('62')) {
       phoneVariants.push('0' + phone.substring(2));   // 628xx → 08xx
@@ -337,18 +262,23 @@ class WhatsAppService {
   private async handleIncomingMessage(msg: any) {
     if (!this.socket) return;
 
-    // replyJid = raw JID from WhatsApp (could be @lid or @s.whatsapp.net)
-    // This is what we use to SEND replies back
+    // replyJid = raw JID for sending replies (could be @lid or @s.whatsapp.net)
     const replyJid = msg.key.remoteJid;
     if (!replyJid) return;
+
+    // phoneJid = JID with actual phone number (from remoteJidAlt if available)
+    // Baileys v7 provides remoteJidAlt with @s.whatsapp.net format when addressing mode is LID
+    const phoneJid = (msg.key.remoteJidAlt && msg.key.remoteJidAlt.endsWith('@s.whatsapp.net'))
+      ? msg.key.remoteJidAlt
+      : replyJid;
 
     const body = this.extractMessageBody(msg).trim();
     if (!body) return;
 
-    console.log(`[WA Bot] Message: "${body.substring(0, 80)}" from: ${replyJid}`);
+    console.log(`[WA Bot] Message: "${body.substring(0, 80)}" | reply: ${replyJid} | phone: ${phoneJid}`);
 
-    // 1. Verify user (resolves LID → phone internally)
-    const user = await this.verifyUser(replyJid);
+    // 1. Verify user using phoneJid (has actual phone number)
+    const user = await this.verifyUser(phoneJid);
     if (!user) {
       await this.socket.sendMessage(replyJid, {
         text: '❌ *Nomor Tidak Terdaftar*\n\nMaaf, nomor WhatsApp Anda belum terdaftar di sistem IT Helpdesk.\n\nSilakan masukkan nomor WA Anda di halaman *Profil* pada aplikasi IT Helpdesk terlebih dahulu.',
@@ -763,12 +693,6 @@ class WhatsAppService {
 
           if (type === 'notify' && Array.isArray(messages)) {
             for (const msg of messages) {
-              // LOG FULL RAW MESSAGE
-              console.log(`[WA Bot] ========== RAW MESSAGE ==========`);
-              console.log(JSON.stringify(msg, null, 2));
-              console.log(`[WA Bot] ================================`);
-
-              // Skip invalid messages
               if (!msg.message) continue;
               if (msg.key.fromMe) continue;
               if (msg.key.remoteJid === 'status@broadcast') continue;
